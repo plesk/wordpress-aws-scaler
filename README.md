@@ -27,7 +27,14 @@ Visit [http://localhost/](http://localhost/)! Stop your server with **Ctrl+C**.
 
 # Setup MySQL database with RDS
 
-tbd
+Select a database type in AWS RDS:
+   * Amazon Aurora (high performance, works only on new DB.r3 instances)
+   * MySQL DB
+   * Maria DB
+ 
+Choose a EC2 resource type: e.g. db.t2.small (1 vCPU, 1 GiB RAM)
+ 
+Select "Multi-AZ Deployment" to have Amazon RDS maintain a synchronous standby replica in a different Availability Zone than the DB instance. Amazon RDS will automatically fail over to the standby in the case of a planned or unplanned outage of the primary. Learn More at http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html
 
 # Create ELB and AutoScaling group
 
