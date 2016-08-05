@@ -4,6 +4,10 @@ RUN apt-get update && apt-get install -y mysql-client nginx libpng12-dev libjpeg
 	&& docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
 	&& docker-php-ext-install gd mysqli pdo pdo_mysql opcache
 
+# nginx site conf
+ADD ./nginx-site.conf /etc/nginx/sites-available/default
+#RUN sed -i "s/nginx;/www-data;/" /etc/nginx/nginx.conf
+
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
 RUN { \
@@ -20,16 +24,16 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
 	&& chmod +x wp-cli.phar \
 	&& mv wp-cli.phar /usr/local/bin/wp
 
-VOLUME /var/www/html
-
 COPY docker-entrypoint.sh /entrypoint.sh
-
-WORKDIR /usr/src/wordpress
-VOLUME ['/usr/src/wordpress/wp-content']
 
 # grr, ENTRYPOINT resets CMD now
 ENTRYPOINT ["/entrypoint.sh"]
 
-EXPOSE 80 443
+RUN mkdir /usr/src/wordpress
+RUN chown -R www-data:www-data /usr/src/wordpress
+WORKDIR /usr/src/wordpress
+VOLUME ['/usr/src/wordpress/wp-content']
+
+EXPOSE 80
 CMD ["php-fpm"]
 CMD ["nginx", "-g", "daemon off;"]
