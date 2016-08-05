@@ -2,7 +2,7 @@
 set -e
 
 : "${WORDPRESS_TITLE:=WordPress site}"
-: "${WORDPRESS_URL:=http://localhost}"
+: "${WORDPRESS_URL:=http://localhost:8080}"
 
 : "${WORDPRESS_VERSION:=latest}"
 : "${WORDPRESS_DB_PREFIX:=wp_}"
