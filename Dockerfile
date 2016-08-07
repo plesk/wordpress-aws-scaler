@@ -1,10 +1,13 @@
 FROM debian:testing
 
-RUN apt-get update && apt-get install -y mysql-client nginx && rm -rf /var/lib/apt/lists/*
+# Upgrade everything
+RUN apt-get update && apt-get upgrade -y
+
+# Basics software
+RUN apt-get install -y wget curl mysql-client nginx
 
 # PHP
-RUN apt-get update && \
-    apt-get -y install \
+RUN apt-get update && apt-get -y install \
     php7.0 \
     php7.0-cgi \
     php7.0-cli \
@@ -39,19 +42,9 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
 	&& chmod +x wp-cli.phar \
 	&& mv wp-cli.phar /usr/local/bin/wp
 
-# Install New Relic SERVER and APM agent
-RUN echo deb http://apt.newrelic.com/debian/ newrelic non-free >> /etc/apt/sources.list.d/newrelic.list \
-    && apt-get update \
-    && apt-get install -y ca-certificates wget \
-    && wget -O- https://download.newrelic.com/548C16BF.gpg | apt-key add - \
-    && apt-get install -y --force-yes \
-	newrelic-sysmond \
-    	newrelic-php5 \
-    && nrsysmond-config --set license_key=22660887228aa6e487fab34c408663dff6dc2c50 \
-    && /etc/init.d/newrelic-sysmond start \
-    && newrelic-install install \
-    && newrelic-php5 newrelic-php5/application-name string “WordPress AWS Scaler” | debconf-set-selections \
-    && newrelic-php5 newrelic-php5/license-key string "22660887228aa6e487fab34c408663dff6dc2c50" | debconf-set-selections
+# Add New Relic repo
+RUN echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
+    && wget -O- https://download.newrelic.com/548C16BF.gpg | apt-key add -
 
 COPY docker-entrypoint.sh /entrypoint.sh
 
@@ -62,4 +55,5 @@ WORKDIR /usr/src/wordpress
 VOLUME ['/usr/src/wordpress/wp-content']
 
 EXPOSE 80
+EXPOSE 443
 CMD ["nginx", "-g", "daemon off;"]

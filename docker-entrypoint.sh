@@ -11,6 +11,8 @@ set -e
 : "${WORDPRESS_USER_PASSWORD:=admin}"
 : "${WORDPRESS_USER_EMAIL:=admin@admin.dev}"
 
+: "${NEWRELIC_NAME:=WordPress AWS Scaler}"
+
 if [[ -z "$WORDPRESS_DB_HOST" || -z "$WORDPRESS_DB_USER" || -z "$WORDPRESS_DB_PASSWORD" || -z "$WORDPRESS_DB_NAME" ]]; then
 	echo >&2 'error: missing required database environment variables'
 	echo >&2 '  Did you forget to -e WORDPRESS_DB_HOST=... ?'
@@ -40,5 +42,14 @@ if ! $(wp core is-installed --allow-root); then
 
 	echo >&2 "Installing WordPress ended"
 fi
+
+if [ "$NEWRELIC_KEY" ]; then
+	echo newrelic-php5 newrelic-php5/application-name string "$NEWRELIC_NAME" | debconf-set-selections
+	echo newrelic-php5 newrelic-php5/license-key string "$NEWRELIC_KEY" | debconf-set-selections
+
+	apt-get update && apt-get install -y newrelic-php5
+fi
+
+service php7.0-fpm restart
 
 exec "$@"
