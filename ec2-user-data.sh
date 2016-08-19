@@ -1,0 +1,3 @@
+#!/bin/bash
+docker pull janloeffler/wordpress-aws-scaler:0.1
+docker run -d -p 80:80 -e WORDPRESS_DB_HOST='YOUR_DB_HOST.eu-west-1.rds.amazonaws.com' -e WORDPRESS_DB_USER='YOUR_DB_USER' -e WORDPRESS_DB_PASSWORD='YOUR_DB_PASSWORD' -e WORDPRESS_DB_NAME='YOUR_DB_NAME' -e WORDPRESS_DB_PREFIX='YOUR_DB_PREFIX' -e WORDPRESS_URL='http://YOUR_WORDPRESS_URL.eu-west-1.elb.amazonaws.com' -it janloeffler/wordpress-aws-scaler:0.1

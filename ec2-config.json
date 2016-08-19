@@ -1,0 +1,25 @@
+{
+    "ImageId": "ami-64385917", 
+    "MinCount": 2, 
+    "MaxCount": 20, 
+    "SecurityGroupIds": [
+        "sg-1b8dde7c"
+    ], 
+    "UserData": "ec2-user-data.sh", 
+    "InstanceType": "m3.medium", 
+    "BlockDeviceMappings": [
+        {
+            "VirtualName": "WordPress Scaler Disk", 
+            "DeviceName": "/dev/sdb", 
+            "Ebs": {
+                "VolumeSize": 10, 
+                "DeleteOnTermination": true, 
+                "VolumeType": "standard" 
+            }, 
+            "NoDevice": ""
+        }
+    ], 
+    "Monitoring": {
+        "Enabled": true
+    }
+}
