@@ -8,7 +8,26 @@ This is a how-to including scripts about how to auto-scale WordPress across mult
  
  * Docker (installed on your development machine)
  * AWS account 
+ * AWS CLI see https://docs.aws.amazon.com/cli/latest/userguide/installing.html 
+
+# Prepare AWS CLI on developer machine
  
+ * Install AWS CLI
+
+    $ sudo pip install awscli
+
+ * Configure AWS CLI
+
+    $ aws configure
+
+ * Check if all works by listing existing ec2 instances
+
+    $ aws ec2 describe-instances
+
+ * You can later create new WordPress instances by creating pre-configured ec2 instances
+
+    $ aws ec2 run-instances --cli-input-json file://ec2-config.json
+
 # How to build and deploy WordPress on AWS
 
 # Build the docker image for WordPress
@@ -39,3 +58,20 @@ Select "Multi-AZ Deployment" to have Amazon RDS maintain a synchronous standby r
 # Create ELB and AutoScaling group
 
 tbd
+
+# AWS CLI Calls by manage_wordpress.sh script
+
+    $ manage_wordpress.sh create
+
+    $ aws ec2 describe-vps
+    $ aws ec2 create-vpc
+    $ aws ec2 describe-security-groups
+    $ aws ec2 create-security-group
+    $ aws ec2 describe-instances
+    $ aws ec2 run-instances
+    
+    $ manage_wordpress.sh delete
+    
+    $ aws ec2 terminate-instances
+    $ aws ec2 delete-security-group
+    $ aws ec2 delete-vpc
