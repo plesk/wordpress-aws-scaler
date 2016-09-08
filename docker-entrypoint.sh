@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 : "${WORDPRESS_TITLE:=WordPress site}"
 : "${WORDPRESS_URL:=http://localhost:8080}"
@@ -12,6 +11,9 @@ set -e
 : "${WORDPRESS_USER_EMAIL:=admin@admin.dev}"
 
 : "${NEWRELIC_NAME:=WordPress AWS Scaler}"
+
+: "${S3_BUCKET:=WordPress AWS Scaler}"
+: "${S3_REGION:=EU}"
 
 if [[ -z "$WORDPRESS_DB_HOST" || -z "$WORDPRESS_DB_USER" || -z "$WORDPRESS_DB_PASSWORD" || -z "$WORDPRESS_DB_NAME" ]]; then
 	echo >&2 'error: missing required database environment variables'
@@ -31,7 +33,25 @@ if ! $(wp core is-installed --allow-root); then
 
 	echo >&2 "WordPress has been successfully copied to $(pwd)"
 
-	wp core config --dbname="$WORDPRESS_DB_NAME" --dbuser="$WORDPRESS_DB_USER" --dbpass="$WORDPRESS_DB_PASSWORD" --dbhost="$WORDPRESS_DB_HOST" --dbprefix="$WORDPRESS_DB_PREFIX" --allow-root
+	if [[ -n "$S3_KEY" && -n "$S3_SECRET" ]]; then
+		S3_ENABLED=true
+
+	read -r -d '' extra <<PHP
+define( 'S3_UPLOADS_BUCKET', '$S3_BUCKET' );
+define( 'S3_UPLOADS_KEY', '$S3_KEY' );
+define( 'S3_UPLOADS_SECRET', '$S3_SECRET' );
+define( 'S3_UPLOADS_REGION', '$S3_REGION' ); // the s3 bucket region, required for Frankfurt and Beijing.
+PHP
+	fi
+
+	
+	if [ "$extra" ]; then
+		wp core config --dbname="$WORDPRESS_DB_NAME" --dbuser="$WORDPRESS_DB_USER" --dbpass="$WORDPRESS_DB_PASSWORD" --dbhost="$WORDPRESS_DB_HOST" --dbprefix="$WORDPRESS_DB_PREFIX" --allow-root --extra-php <<PHP
+$extra
+PHP
+	else
+		wp core config --dbname="$WORDPRESS_DB_NAME" --dbuser="$WORDPRESS_DB_USER" --dbpass="$WORDPRESS_DB_PASSWORD" --dbhost="$WORDPRESS_DB_HOST" --dbprefix="$WORDPRESS_DB_PREFIX" --allow-root
+	fi
 
 	echo >&2 "WordPress config has been successfully been created in $(pwd)"
 
@@ -48,6 +68,10 @@ if [ "$NEWRELIC_KEY" ]; then
 	echo newrelic-php5 newrelic-php5/license-key string "$NEWRELIC_KEY" | debconf-set-selections
 
 	apt-get update && apt-get install -y newrelic-php5
+fi
+
+if [ "$S3_ENABLED" ]; then
+	wp plugin install https://github.com/humanmade/S3-Uploads/archive/master.zip --activate --allow-root
 fi
 
 service php7.0-fpm restart
