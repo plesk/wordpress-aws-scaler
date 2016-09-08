@@ -1,10 +1,18 @@
 #!/bin/bash
 
-SEC_GROUP_NAME = "WordPressScalerSecurityGroup"
-SEC_GROUP_DESC = "Security Group for Plesk WordPress Scaler"
-AMI            = "ami-64385917"
-INSTANCE_TYPE  = "t2.micro"
-REGION         = "eu-west-1"
+function get_config
+{
+	while read -r a b; do
+		if [[ $1 == $a ]]
+		then
+			regex="^\"(.*)\"$"
+			if [[ $b =~ $regex ]]
+			then
+				echo ${BASH_REMATCH[1]}
+			fi
+		fi
+	done < wordpress-scalar.ini
+}
 
 function parse_json
 {
@@ -16,6 +24,13 @@ function parse_json
         echo ''
     fi
 }
+
+# Set values from configuration file
+SEC_GROUP_NAME=$(get_config SEC_GROUP_NAME)
+SEC_GROUP_DESC=$(get_config SEC_GROUP_DESC)
+AMI=$(get_config AMI)
+INSTANCE_TYPE=$(get_config INSTANCE_TYPE)
+REGION=$(get_config REGION)
 
 if [[ $1 == "create" ]]; then
 
