@@ -20,7 +20,7 @@ if [[ -z "$WORDPRESS_DB_HOST" || -z "$WORDPRESS_DB_USER" || -z "$WORDPRESS_DB_PA
 	exit 1
 fi
 
-if ! $(wp core is-installed --allow-root); then
+if [ ! -f /usr/src/wordpress/wp-config.php ]; then
 	if [[ -n "$S3_KEY" && -n "$S3_SECRET" ]]; then
 		S3_ENABLED=true
 
@@ -42,7 +42,9 @@ PHP
 	fi
 
 	echo >&2 "WordPress config has been successfully been created in $(pwd)"
+fi
 
+if ! $(wp core is-installed --allow-root); then
 	if [ -f /data.sql ]; then
 		echo >&2 "Restoring database"
 		wp db import /data.sql --allow-root
