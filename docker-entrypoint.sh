@@ -46,7 +46,7 @@ PHP
 	if [ -f /data.sql ]; then
 		echo >&2 "Restoring database"
 		wp db import /data.sql --allow-root
-		wp core update-db
+		wp core update-db --allow-root
 	elif ! $(wp core is-installed --allow-root); then
 		echo >&2 "Installing WordPress in $(pwd)"
 		wp core install --url="$WORDPRESS_URL" --title="$WORDPRESS_TITLE" --admin_user="$WORDPRESS_USER_NAME" --admin_password="$WORDPRESS_USER_PASSWORD" --admin_email="$WORDPRESS_USER_EMAIL" --allow-root
