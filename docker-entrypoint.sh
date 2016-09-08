@@ -70,6 +70,8 @@ if [ -f /data.sql ]; then
 	/custom.sh
 fi
 
+chown -R www-data:www-data /usr/src/wordpress
+
 service php7.0-fpm restart
 
 exec "$@"
