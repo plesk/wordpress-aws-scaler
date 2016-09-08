@@ -3,7 +3,6 @@
 : "${WORDPRESS_TITLE:=WordPress site}"
 : "${WORDPRESS_URL:=http://localhost:8080}"
 
-: "${WORDPRESS_VERSION:=latest}"
 : "${WORDPRESS_DB_PREFIX:=wp_}"
 
 : "${WORDPRESS_USER_NAME:=admin}"
@@ -22,17 +21,6 @@ if [[ -z "$WORDPRESS_DB_HOST" || -z "$WORDPRESS_DB_USER" || -z "$WORDPRESS_DB_PA
 fi
 
 if ! $(wp core is-installed --allow-root); then
-	echo >&2 "WordPress not found in $(pwd) - copying now..."
-
-	if [ "$(ls -A)" ]; then
-		echo >&2 "WARNING: $(pwd) is not empty - press Ctrl+C now if this is an error!"
-		( set -x; ls -A; sleep 10 )
-	fi
-
-	wp core download --version="$WORDPRESS_VERSION" --allow-root
-
-	echo >&2 "WordPress has been successfully copied to $(pwd)"
-
 	if [[ -n "$S3_KEY" && -n "$S3_SECRET" ]]; then
 		S3_ENABLED=true
 

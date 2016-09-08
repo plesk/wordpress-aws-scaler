@@ -29,6 +29,7 @@ RUN apt-get update && apt-get -y install \
     php7.0-xsl \
     php7.0-fpm \
     php7.0-intl \
+    php7.0-zip \
     php7.0-mcrypt && apt-get clean
 
 RUN mkdir /run/php
@@ -41,6 +42,9 @@ RUN sed -i "s/nginx;/www-data;/" /etc/nginx/nginx.conf
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
 	&& chmod +x wp-cli.phar \
 	&& mv wp-cli.phar /usr/local/bin/wp
+
+# Cache WordPress
+run wp core download --path=/usr/src/wordpress --allow-root
 
 # Add New Relic repo
 RUN echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
