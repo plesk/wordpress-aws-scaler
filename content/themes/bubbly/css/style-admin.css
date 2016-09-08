@@ -1,0 +1,255 @@
+/*===== Variables =====*/
+/* Theme Colors */
+/* Social Media Brand Colors */
+/*===== Mixins =====*/
+/* grid stuff */
+                           /* Baseline Grid
+background-image: linear-gradient(#fff 23px, #00fffc 24px, #fff 0px);
+background-size: 1px 24px; /* this is a 24px baseline grid */
+                        /* Column Grid
+background-color: gray;
+background-image: linear-gradient(90deg, transparent 99%, rgba(255,255,255,.5) 0%);
+background-size: 11.1%; /* This is at 6-columns -> just change this # */
+/* styles for theme options page */
+#bubbly-dashboard-wrap .nav-tab-wrapper {
+  padding-top: 36px;
+  margin-bottom: 24px;
+}
+
+.content {
+  margin-top: 12px;
+  padding: 12px 24px 24px;
+  border: solid 1px #e5e5e5;
+  background: white;
+}
+.content .button-primary {
+  margin:1px 0;
+}
+.content ul {
+  list-style: disc;
+  margin-left: 36px;
+}
+
+.content-licenses {
+  border: none;
+  padding: 0;
+}
+.content-licenses form {
+  padding: 0 24px;
+  margin-bottom: 24px;
+  border: solid 1px #ccc;
+  background: white;
+}
+.content-licenses form h4 {
+  padding: 12px 24px;
+  margin: 0 12px 12px -24px;
+  width: 100%;
+  background: #f5f5f5;
+  border-bottom: solid 1px #ccc;
+  font-weight: 600;
+  font-size: 16px;
+}
+.content-licenses form span {
+  display: block;
+}
+.content-licenses label {
+  display: block;
+}
+.content-licenses .invalid {
+  background: #E54C56;
+}
+.content-licenses .valid {
+  background: #3FBF5D;
+  color: white;
+  padding: 12px;
+}
+.content-licenses .valid a {
+  color: white;
+}
+.content-licenses .form-table {
+  margin: 12px 0;
+  display: block;
+}
+.content-licenses .form-table td, .content-licenses .form-table th {
+  border: solid 1px #e5e5e5;
+  display: block;
+  width: 100%;
+  width: calc(100% - 24px);
+  padding: 12px;
+}
+.content-licenses .form-table th {
+  background: #f5f5f5;
+  border-bottom: none;
+}
+.content-licenses .form-table tr {
+  margin: 12px 0;
+  display: block;
+}
+
+/* 600px */
+@media all and (min-width: 37.5em) {
+  .content {
+    width: 39%;
+    float: left;
+  }
+  .content p {
+    min-height: 57px; margin:0px;
+  }
+
+  .content-customization,
+  .content-premium-upgrades {
+    margin-right: 2%;
+  }
+}
+/* 1100px */
+@media all and (min-width: 68.75em) {
+  .content {
+    width: 27%;
+  }
+  .content:nth-child(3n + 3) {
+    clear: left;
+  }
+
+  .content-customization, .content-resources, .content-design,
+  .content-support {
+    margin-right: 1%;
+  }
+
+  .content-premium-upgrades {
+    margin-right: 0;
+  }
+
+  .content-licenses h3 {
+    clear: both;
+  }
+  .content-licenses form {
+    width: 43%;
+    float: left;
+  }
+  .content-licenses form.odd {
+    margin-right: 2%;
+    clear: left;
+  }
+  .content-licenses form:after {
+    content: ".";
+    display: block;
+    clear: both;
+    visibility: hidden;
+    line-height: 0;
+    height: 0;
+  }
+}
+/* Styles for Post Video meta box */
+#ct_bubbly_video .inside {
+  padding: 0;
+  margin: 0;
+}
+#ct_bubbly_video .description {
+  padding: 6px 12px 12px 24px;
+}
+
+.ct_bubbly_video_input_container {
+  padding: 24px 24px 12px;
+}
+.ct_bubbly_video_input_container label {
+  margin-right: 46px;
+  font-weight: 700;
+}
+.ct_bubbly_video_input_container div {
+  position: relative;
+  display: inline-block;
+}
+.ct_bubbly_video_input_container div svg {
+  position: absolute;
+  top: 3px;
+  padding: 5px;
+  right: 3px;
+  background: rgba(255, 255, 255, 0.8);
+  opacity: 0;
+  -webkit-transition: opacity 0.2s ease;
+          transition: opacity 0.2s ease;
+}
+.ct_bubbly_video_input_container.has-vid svg {
+  opacity: 1;
+}
+
+.ct_bubbly_video_preview_container {
+  position: relative;
+  padding: 24px;
+  text-align: center;
+  min-height: 300px;
+  border: dashed 4px #E1ECED;
+  background: #F2F9FA;
+}
+.ct_bubbly_video_preview_container label {
+  position: absolute;
+  top: 45%;
+  left: 0;
+  right: 0;
+  display: block;
+  font-size: 24px;
+  color: #C9D2D4;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.ct_bubbly_video_preview_container.has-vid {
+  min-height: 0;
+  border: none;
+  border-bottom: solid 1px #e5e5e5;
+  background: none;
+}
+.ct_bubbly_video_preview_container .loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(67, 179, 196, 0.4);
+  opacity: 0;
+  text-align: center;
+  visibility: hidden;
+  -webkit-transition: all 0.3s ease;
+          transition: all 0.3s ease;
+}
+.ct_bubbly_video_preview_container .loading svg {
+  position: absolute;
+  right: 47%;
+  top: 38%;
+  -webkit-animation: spin 2s linear infinite;
+          animation: spin 2s linear infinite;
+}
+.ct_bubbly_video_preview_container.ajax-loading .loading {
+  visibility: visible;
+  opacity: 1;
+}
+@-ms-keyframes spin {
+  100% {
+    -ms-transform: rotate(360deg);
+        transform: rotate(360deg);
+  }
+}
+@-webkit-keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+            transform: rotate(360deg);
+  }
+}
+@keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+            transform: rotate(360deg);
+  }
+}
+.ct_bubbly_video_display_container {
+  padding: 0px 24px 24px;
+}
+.ct_bubbly_video_display_container p {
+  font-weight: 700;
+}
+.ct_bubbly_video_display_container label {
+  display: block;
+  margin-bottom: 6px;
+}
+.ct_bubbly_video_display_container input {
+  margin-right: 12px;
+}
