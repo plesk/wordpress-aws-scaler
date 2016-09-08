@@ -43,9 +43,11 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
 	&& chmod +x wp-cli.phar \
 	&& mv wp-cli.phar /usr/local/bin/wp
 
-# Cache WordPress
+# Download WordPress
 run wp core download --path=/usr/src/wordpress --allow-root
 
+# Integrate user data
+COPY content /usr/src/wordpress/wp-content
 # Add New Relic repo
 RUN echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
     && wget -O- https://download.newrelic.com/548C16BF.gpg | apt-key add -
