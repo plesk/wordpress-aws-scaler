@@ -43,7 +43,11 @@ PHP
 
 	echo >&2 "WordPress config has been successfully been created in $(pwd)"
 
-	if ! $(wp core is-installed --allow-root); then
+	if [ -f /data.sql ]; then
+		echo >&2 "Restoring database"
+		wp db import /data.sql --allow-root
+		wp core update-db
+	elif ! $(wp core is-installed --allow-root); then
 		echo >&2 "Installing WordPress in $(pwd)"
 		wp core install --url="$WORDPRESS_URL" --title="$WORDPRESS_TITLE" --admin_user="$WORDPRESS_USER_NAME" --admin_password="$WORDPRESS_USER_PASSWORD" --admin_email="$WORDPRESS_USER_EMAIL" --allow-root
 	fi
