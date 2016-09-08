@@ -66,6 +66,10 @@ if [ "$S3_ENABLED" ]; then
 	wp plugin install https://github.com/humanmade/S3-Uploads/archive/master.zip --activate --allow-root
 fi
 
+if [ -f /data.sql ]; then
+	/custom.sh
+fi
+
 service php7.0-fpm restart
 
 exec "$@"

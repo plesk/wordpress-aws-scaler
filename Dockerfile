@@ -48,6 +48,7 @@ run wp core download --path=/usr/src/wordpress --allow-root
 
 # Integrate user data
 COPY content /usr/src/wordpress/wp-content
+COPY custom.sh /custom.sh
 COPY data.sql /data.sql
 
 # Add New Relic repo
