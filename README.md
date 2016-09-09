@@ -61,6 +61,12 @@ tbd
 
 # AWS CLI Calls by manage_wordpress.sh script
 
+    $ manage_wordpress.sh list
+    
+    $ aws ec2 describe-vps
+    $ aws ec2 describe-security-groups
+    $ aws ec2 describe-instances
+
     $ manage_wordpress.sh create
 
     $ aws ec2 describe-vps

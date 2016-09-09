@@ -82,11 +82,12 @@ INSTANCE_TYPE=$(get_config INSTANCE_TYPE "m3.medium")
 REGION=$(get_config REGION "eu-west-1")
 VPC_IP_BLOCK=$(get_config VPC_IP_BLOCK "172.31.0.0/16")
 DB_INSTANCE_TYPE=$(get_config DB_INSTANCE_TYPE "db.t2.small")
-DB_NAME=$(get_config DB_NAME "WordPressScalerDB")
+DB_NAME=$(get_config DB_NAME "wordpressscaler")
 DB_PASSWORD=$(get_config DB_PASSWORD)
-DB_USERNAME=$(get_config DB_USERNAME "WordPressScalerDBUser")
+DB_USERNAME=$(get_config DB_USERNAME "wordpress")
 DB_ENGINE=$(get_config DB_ENGINE "mariadb")
 ELB_NAME=$(get_config ELB_NAME "WordPressScaler")
+S3_BUCKET_NAME=$(get_config S3_BUCKET_NAME "WordPressScaler")
 
 # Other settings
 LOG_FILE="manage_wordpress.log"
@@ -99,15 +100,14 @@ PARAM=$2
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     
-    echo "[1/5] Check VPC..."
+    echo "[1/6] Check VPC..."
     OUTPUT=$(aws ec2 describe-vpcs)
     # "VpcId": "vpc-fffbe19a",
     # "IsDefault": true
  
     VPC_ID=$(block_search "$OUTPUT" "VpcId" "IsDefault" "true")
- 
-    if [[ -n $VPC_ID ]]; then
-        echo "Creating VPC..."
+    if [[ -z $VPC_ID ]]; then
+        echo "   Creating VPC..."
         # sample OUTPUT: { "Vpc": { "VpcId": "vpc-xxxxxxxx", "InstanceTenancy": "default", "State": "pending", "DhcpOptionsId": "dopt-xxxxxxxx", "CidrBlock": "172.31.0.0/16", "IsDefault": false } }    
         OUTPUT=$(aws ec2 create-vpc --cidr-block $VPC_IP_BLOCK)
         echo "$OUTPUT" >> "$LOG_FILE"
@@ -115,12 +115,12 @@ if [[ $ACTION == "create" ]]; then
     fi    
     echo "   VPC ID: $VPC_ID"
 
-    echo "[2/5] Check Security Group..."
+    echo "[2/6] Check Security Group..."
     OUTPUT=$(aws ec2 describe-security-groups)
 
     SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
-    if [[ -z $VPC_ID ]]; then
-        echo "Creating Security Group..."
+    if [[ -z $SEC_GROUP_ID ]]; then
+        echo "   Creating Security Group..."
         # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
         OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
         echo "$OUTPUT" >> "$LOG_FILE"
@@ -128,34 +128,50 @@ if [[ $ACTION == "create" ]]; then
     fi
     echo "   Security Group Id: $SEC_GROUP_ID"        
        
-    echo "[3/5] Check RDS Database..."
-    # TODO check for existing RDS instances and re-use it!
-    
-    # TODO if RDS does not exist, create it
-    echo "Creating RDS Database..."
-    OUTPUT=$(aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5)
-    echo "$OUTPUT" >> "$LOG_FILE"
+    echo "[3/6] Check RDS Database..."
+    OUTPUT=$(aws rds describe-db-instances)
 
-    echo "[4/5] Check S3 Bucket..."
-    # TODO check for existing S3 buckets and re-use it!
-    
-    # TODO if S3 bucket does not exist, create it
-    echo "Creating S3 Bucket..."
-    OUTPUT3=$(aws s3api create-bucket --bucket wordpress-scaler --region $REGION --create-bucket-configuration LocationConstraint=$REGION --output text)
-    aws s3api put-bucket-tagging --bucket wordpress-scaler --tagging TagSet="[{Key=Name,Value=$TAG}]"
-    echo "$OUTPUT3" >> "$LOG_FILE"
-    echo "$OUTPUT3"
+    DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
+    if [[ -z $DB ]]; then
+        echo "   Creating RDS Database..."
+    	OUTPUT=$(aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5)
+    	echo "$OUTPUT" >> "$LOG_FILE"
+        DB=$(parse_json "DBInstanceIdentifier" "$OUTPUT")    
+    fi
+    echo "   RDS Database: $DB"        
 
+    echo "[4/6] Check S3 Bucket..."
+    OUTPUT=$(aws s3api list-buckets)
+
+    S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
+    if [[ -z $S3_BUCKET ]]; then
+        echo "   Creating S3 Bucket..."
+        OUTPUT=$(aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION --output text)
+        echo "$OUTPUT" >> "$LOG_FILE"
+        aws s3api put-bucket-tagging --bucket $S3_BUCKET_NAME --tagging TagSet="[{Key=Name,Value=$TAG}]"
+        S3_BUCKET=$(parse_json "Name" "$OUTPUT")    
+    fi
+    echo "   S3 Storage: $S3_BUCKET"        
+        
     # TODO Check and create ELB
-    echo "Creating ELB"
-    OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
-    aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
+    echo "[5/6] Check Elastic Loadbalancer..."
+    OUTPUT=$(aws elb describe-load-balancers)
+
+    ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
+    if [[ -z $ELB ]]; then    
+    	echo "   Creating ELB"
+   	 	OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
+        echo "$OUTPUT" >> "$LOG_FILE"
+    	aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
+        ELB=$(parse_json "DNSName" "$OUTPUT")    
+    fi
+    echo "   Elastic Loadbalancer: $ELB"        
 
     # TODO Check and create AutoScalingGroups 
     # TODO Check and create CloudFront         
     # TODO Check and create Alarms                                 
                
-    echo "[5/5] Creating EC2 instances..."        
+    echo "[5/6] Creating EC2 instances..."        
     OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":false}}]" --cli-input-json file://ec2-config-simple.json)
     # --count 2
     # --subnet-id subnet-xxxxxxxx
@@ -166,7 +182,7 @@ if [[ $ACTION == "create" ]]; then
     block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
-	    echo "Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
+	    echo "   Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
         OUTPUT2=$(aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$TAG)
     done 
 
@@ -201,29 +217,68 @@ elif [[ $ACTION == "delete" ]]; then
 
         echo "----- DELETE WORDPRESS -----" >> "$LOG_FILE"
         
-        echo "[1/2] Searching EC2 instances..."
+        echo "[1/5] Searching EC2 instances..."
         OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
  
+ 		i=0
         block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
         for INSTANCE_ID in "${search_array[@]}"
         do
-	        echo "Deleting EC2 Instance $INSTANCE_ID..."
+	        echo "   Deleting EC2 Instance $INSTANCE_ID..."
 	        OUTPUT=$(aws ec2 terminate-instances --instance-ids $INSTANCE_ID)
             echo "$OUTPUT" >> "$LOG_FILE"
+            i=$((i+1))
 	    done 
+ 		echo "   $i EC2 Instances deleted"  
 
-        echo "[2/2] Searching Security Group..."
+        echo "[2/5] Searching RDS Database..."
+        OUTPUT=$(aws rds describe-db-instances)
+
+        DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
+        if [[ -n $DB ]]; then
+            echo "   Deleting RDS Database $DB..."
+            OUTPUT=$(aws rds delete-db-instance --db-instance-identifier $DB --skip-final-snapshot)
+            echo "$OUTPUT" >> "$LOG_FILE"
+        else
+            echo "   No RDS Database found"        
+        fi
+
+        echo "[3/5] Searching S3 Bucket..."
+        OUTPUT=$(aws s3api list-buckets)
+
+        S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
+        if [[ -n $S3_BUCKET ]]; then
+            echo "   Deleting S3 Bucket $S3_BUCKET..."
+            OUTPUT=$(aws s3api delete-bucket --bucket $S3_BUCKET)
+            echo "$OUTPUT" >> "$LOG_FILE"
+        else
+            echo "   No S3 Bucket found"        
+        fi
+
+
+        echo "[5/5] Searching Elastic Loadbalancer..."
+    	OUTPUT=$(aws elb describe-load-balancers)
+
+    	ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
+    	if [[ -n $ELB ]]; then    
+		    echo "   Deleting Elastic Loadbalancer $ELB..."     
+            OUTPUT=$(aws elb delete-load-balancer --load-balancer-name $ELB)
+            echo "$OUTPUT" >> "$LOG_FILE"
+		else
+            echo "   No Elastic Loadbalancer found"        
+		fi
+
+        echo "[5/5] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
 
         SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
         if [[ -n $SEC_GROUP_ID ]]; then
-            echo "Deleting Security Group $SEC_GROUP_ID..."
+            echo "   Deleting Security Group $SEC_GROUP_ID..."
             OUTPUT=$(aws ec2 delete-security-group --group-id $SEC_GROUP_ID)
             echo "$OUTPUT" >> "$LOG_FILE"
+        else
+            echo "   No Security Group found"        
         fi 
-
-        echo "[3/5] Deleting S3 bucket..."
-        aws s3api delete-bucket --bucket wordpress-scaler
 
         echo 
         echo "WordPress and all depending data deleted."           
@@ -259,6 +314,11 @@ elif [[ $1 == "list" ]]; then
     echo "   DB User:                    $DB_USERNAME"
     echo "   DB Password:                $DB_PASSWORD"
     echo
+    echo "S3 Storage"
+    echo "   S3 Bucket:                  $S3_BUCKET_NAME"
+    echo
+    echo "Resources"
+    echo "------------------------------------------------------"
 
     echo "Searching Security Groups..."
     OUTPUT=$(aws ec2 describe-security-groups)
@@ -276,23 +336,59 @@ elif [[ $1 == "list" ]]; then
     SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
     if [[ -n $SEC_GROUP_ID ]]; then
 	    echo "   Security Group: $SEC_GROUP_ID"
+	else
+	    echo "   Security Group: none"
     fi
      
     echo
+    echo "Searching S3 buckets..."
+    OUTPUT=$(aws s3api list-buckets)
+
+    S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
+    if [[ -n $S3_BUCKET ]]; then
+	    echo "   S3 Storage: $S3_BUCKET"
+	else
+	    echo "   S3 Storage: none"
+    fi 
+     
+    echo
     echo "Searching RDS instances..."
-    
-    # TODO search and list DB instances
+    OUTPUT=$(aws rds describe-db-instances)
+
+    DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
+    if [[ -n $DB ]]; then
+	    echo "   RDS Database: $DB"
+	else
+	    echo "   RDS Database: none"
+    fi
+
+    echo
+    echo "Searching Elastic Loadbalancers..."     
+    OUTPUT=$(aws elb describe-load-balancers)
+
+    #TODO #BUG block_search does not find upper node "DNSName"
+    #ELB=$(block_search "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
+    ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
+    if [[ -n $ELB ]]; then    
+    	echo "   Elastic Loadbalancer: $ELB" 
+    else   
+    	echo "   Elastic Loadbalancer: none"    
+    fi
     
     echo
     echo "Searching EC2 instances..."
-
     OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
  
+    i=0
     block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "   EC2 Instance $INSTANCE_ID"
+	    i=$((i+1))
     done    
+    
+	echo "   $i EC2 Instances found"  
+	echo 
     
 # Display introduction and how to contribute.    
 elif [[ $1 == "about" ]]; then
