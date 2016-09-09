@@ -72,7 +72,8 @@ if [ "$S3_ENABLED" ]; then
 	wp s3-uploads migrate-attachments --delete-local --allow-root
 fi
 
-if [ -f /data.sql ]; then
+if [ -f /custom.sh ]; then
+	export WORDPRESS_URL
 	/custom.sh
 fi
 
