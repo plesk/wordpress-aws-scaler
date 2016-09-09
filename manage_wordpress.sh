@@ -35,15 +35,15 @@ function parse_json
 }
 
 # Function to get a specific value within a specified block, by using a key / pair search
-# Parameters: 1 Key to find / 2 Value to match / 3 Key within same block / 4 Content string
+# Parameters: 1 Content string / 2 Key within same block / 3 Key to find / 4 Value to match
 function block_search
 {
-    regex="(\{[^{]*\"${1}\":[[:space:]]?\"?${2}\"?[^}]*\})"
+    regex="(\{[^{]*\"${3}\":[[:space:]]?\"?${4}\"?[^}]*\})"
    
-    if [[ $4 =~ $regex ]]
+    if [[ $1 =~ $regex ]]
     then
         block_data=${BASH_REMATCH[1]}
-        regex_block="\"${3}\":[[:space:]]?\"?([^,}\"]*)\"?(,|[[:space:]]*\})"
+        regex_block="\"${2}\":[[:space:]]?\"?([^,}\"]*)\"?(,|[[:space:]]*\})"
    
         if [[ $block_data =~ $regex_block ]]
         then
@@ -53,22 +53,22 @@ function block_search
 }
  
 # Function to get an array of specific values within a specified block, by using a key / pair search
-# Parameters: 1 Key to find / 2 Value to match / 3 Key within same block / 4 Content string
+# Parameters: 1 Content string / 2 Key within same block / 3 Key to find / 4 Value to match
 function block_search_array
 {
     search_array=()
  
-    block_search_key=${1}
-    block_search_value=${2}
-    block_search_result_key=${3}
-    block_search_content=${4}
- 
-    var_block=$(block_search "$block_search_key" "$block_search_value" "$block_search_result_key" "$block_search_content")
+    block_search_content=${1}
+    block_search_result_key=${2}
+    block_search_key=${3}
+    block_search_value=${4}
+
+    var_block=$(block_search "$block_search_content" "$block_search_result_key" "$block_search_key" "$block_search_value")
  
     while [ -n "$var_block" ]; do
         search_array[index++]="$var_block"
         block_search_content="${block_search_content/$block_search_value/}"
-        var_block=$(block_search "$block_search_key" "$block_search_value" "$block_search_result_key" "$block_search_content")
+        var_block=$(block_search "$block_search_content" "$block_search_result_key" "$block_search_key" "$block_search_value")
     done
 }
 
@@ -101,7 +101,7 @@ if [[ $1 == "create" ]]; then
     # "VpcId": "vpc-fffbe19a",
     # "IsDefault": true
  
-    VPC_ID=$(block_search "IsDefault" "true" "VpcId" "$OUTPUT")
+    VPC_ID=$(block_search "$OUTPUT" "VpcId" "IsDefault" "true")
  
     if [[ $VPC_ID == "" ]]; then
         echo "Creating VPC..."
@@ -153,7 +153,7 @@ if [[ $1 == "create" ]]; then
     # "InstanceId": "i-xxxxxxxx"
     echo "$OUTPUT" >> "$LOG_FILE"
 
-    block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
+    block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
@@ -194,7 +194,7 @@ elif [[ $1 == "delete" ]]; then
         OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
         echo "$OUTPUT" >> "$LOG_FILE"
  
-        block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
+        block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
         for INSTANCE_ID in "${search_array[@]}"
         do
 	        echo "Deleting EC2 Instance $INSTANCE_ID..."
@@ -206,7 +206,7 @@ elif [[ $1 == "delete" ]]; then
         OUTPUT=$(aws ec2 describe-security-groups)
         echo "$OUTPUT" >> "$LOG_FILE"
 
-        block_search_array "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT"
+        block_search_array "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME"
         for SEC_GROUP_ID in "${search_array[@]}"
         do
 	        echo "Security Group: $SEC_GROUP_ID"
@@ -262,13 +262,13 @@ elif [[ $1 == "list" ]]; then
     # "VpcId": "vpc-xxxxxxxx"
     # or returns "InvalidGroup.NotFound" if no security group found
 
-    block_search_array "GroupName" "$SEC_GROUP_NAME" "VpcId" "$OUTPUT"
+    block_search_array "$OUTPUT" "VpcId" "GroupName" "$SEC_GROUP_NAME"
     for VPC_ID in "${search_array[@]}"
     do
 	    echo "   VPC ID: $VPC_ID"
     done   
     
-    block_search_array "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT"
+    block_search_array "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME"
     for SEC_GROUP_ID in "${search_array[@]}"
     do
 	    echo "   Security Group: $SEC_GROUP_ID"
@@ -285,7 +285,7 @@ elif [[ $1 == "list" ]]; then
     OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
     echo "$OUTPUT" >> "$LOG_FILE"
  
-    block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
+    block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "   EC2 Instance $INSTANCE_ID"
