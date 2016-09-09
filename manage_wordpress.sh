@@ -103,22 +103,36 @@ if [[ $1 == "create" ]]; then
     fi    
     echo "   VPC ID: $VPC_ID"
 
+    echo "[2/5] Check Security Group..."
     # TODO check for existing Security Group and re-use it!
 
-    echo "[2/5] Creating Security Group..."
+    echo "Creating Security Group..."
     # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
     OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
     echo "$OUTPUT" >> "$LOG_FILE"
     SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")    
     echo "   Security Group Id: $SEC_GROUP_ID"
        
+    echo "[3/5] Check RDS Database..."
     # TODO check for existing RDS instances and re-use it!
     
     # TODO if RDS does not exist, create it
+    echo "Creating RDS Database..."
     OUTPUT=$(aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5)
     echo "$OUTPUT" >> "$LOG_FILE"
+
+    echo "[4/5] Check S3 Bucket..."
+    # TODO check for existing S3 buckets and re-use it!
+    
+    # TODO if S3 bucket does not exist, create it
+    echo "Creating S3 Bucket..."
+            
+    # TODO Check and create ELB                     
+    # TODO Check and create AutoScalingGroups 
+    # TODO Check and create CloudFront         
+    # TODO Check and create Alarms                                 
                
-    echo "[3/5] Creating EC2 instances..."        
+    echo "[5/5] Creating EC2 instances..."        
     OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":false}}]" --cli-input-json file://ec2-config-simple.json)
     # --count 2
     # --subnet-id subnet-xxxxxxxx
@@ -211,12 +225,22 @@ elif [[ $1 == "list" ]]; then
     echo 
     echo "Settings"
     echo "------------------------------------------------------"
+    echo "EC2 Instances"
     echo "   Instance Type:              $INSTANCE_TYPE"
     echo "   Region:                     $REGION"
     echo "   Amazon Machine Image Id:    $AMI"
+    echo "   Device Name:                $DEVICE_NAME"
     echo "   Security Group Name:        $SEC_GROUP_NAME"
     echo "   Security Group Description: $SEC_GROUP_DESC"
     echo "   VPC IP Block:               $VPC_IP_BLOCK "
+    echo "   Tag:                        $TAG "
+    echo
+    echo "RDS Database"
+    echo "   DB Engine:                  $DB_ENGINE "
+    echo "   DB Instance Type:           $DB_INSTANCE_TYPE "
+    echo "   DB Name:                    $DB_NAME "
+    echo "   DB User:                    $DB_USERNAME "
+    echo "   DB Password:                $DB_PASSWORD "
     echo
 
     echo "Searching Security Groups..."
@@ -239,6 +263,23 @@ elif [[ $1 == "list" ]]; then
     do
 	    echo "   Security Group: $SEC_GROUP_ID"
     done   
+    
+    echo
+    echo "Searching RDS instances..."
+    
+    # TODO search and list DB instances
+    
+    echo
+    echo "Searching EC2 instances..."
+
+    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
+    echo "$OUTPUT" >> "$LOG_FILE"
+ 
+    block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
+    for INSTANCE_ID in "${search_array[@]}"
+    do
+	    echo "   EC2 Instance $INSTANCE_ID"
+    done    
     
 # Display introduction and how to contribute.    
 elif [[ $1 == "about" ]]; then
