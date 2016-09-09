@@ -97,13 +97,12 @@ if [[ $1 == "create" ]]; then
     
     echo "[1/5] Check VPC..."
     OUTPUT=$(aws ec2 describe-vpcs)
-    echo "$OUTPUT" >> "$LOG_FILE"
     # "VpcId": "vpc-fffbe19a",
     # "IsDefault": true
  
     VPC_ID=$(block_search "IsDefault" "true" "VpcId" "$OUTPUT")
  
-    if [[ $VPC_ID == "" ]]; then
+    if [[ -n $VPC_ID ]]; then
         echo "Creating VPC..."
         # sample OUTPUT: { "Vpc": { "VpcId": "vpc-xxxxxxxx", "InstanceTenancy": "default", "State": "pending", "DhcpOptionsId": "dopt-xxxxxxxx", "CidrBlock": "172.31.0.0/16", "IsDefault": false } }    
         OUTPUT=$(aws ec2 create-vpc --cidr-block $VPC_IP_BLOCK)
@@ -114,13 +113,17 @@ if [[ $1 == "create" ]]; then
 
     echo "[2/5] Check Security Group..."
     # TODO check for existing Security Group and re-use it!
+    OUTPUT=$(aws ec2 describe-security-groups)
 
-    echo "Creating Security Group..."
-    # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
-    OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
-    echo "$OUTPUT" >> "$LOG_FILE"
-    SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")    
-    echo "   Security Group Id: $SEC_GROUP_ID"
+    SEC_GROUP_ID=$(block_search "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT")
+    if [[ -z $VPC_ID ]]; then
+        echo "Creating Security Group..."
+        # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
+        OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
+        echo "$OUTPUT" >> "$LOG_FILE"
+        SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")    
+        echo "   Security Group Id: $SEC_GROUP_ID"        
+    fi
        
     echo "[3/5] Check RDS Database..."
     # TODO check for existing RDS instances and re-use it!
@@ -192,7 +195,6 @@ elif [[ $1 == "delete" ]]; then
         echo "[1/2] Searching EC2 instances..."
 
         OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
-        echo "$OUTPUT" >> "$LOG_FILE"
  
         block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
         for INSTANCE_ID in "${search_array[@]}"
@@ -204,7 +206,6 @@ elif [[ $1 == "delete" ]]; then
 
         echo "[2/2] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
-        echo "$OUTPUT" >> "$LOG_FILE"
 
         block_search_array "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT"
         for SEC_GROUP_ID in "${search_array[@]}"
@@ -255,7 +256,6 @@ elif [[ $1 == "list" ]]; then
 
     echo "Searching Security Groups..."
     OUTPUT=$(aws ec2 describe-security-groups)
-    echo "$OUTPUT" >> "$LOG_FILE"
 
     # "GroupName": "WordPressScalerSecurityGroup",
     # "GroupId": "sg-xxxxxxxx"    
@@ -283,7 +283,6 @@ elif [[ $1 == "list" ]]; then
     echo "Searching EC2 instances..."
 
     OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
-    echo "$OUTPUT" >> "$LOG_FILE"
  
     block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
     for INSTANCE_ID in "${search_array[@]}"
