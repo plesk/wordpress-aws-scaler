@@ -72,19 +72,19 @@ function block_search_array
 }
 
 # Set values from configuration file
-SEC_GROUP_NAME=$(get_config SEC_GROUP_NAME)
-SEC_GROUP_DESC=$(get_config SEC_GROUP_DESC)
-TAG=$(get_config TAG)
-AMI=$(get_config AMI)
-DEVICE_NAME=$(get_config DEVICE_NAME)
-INSTANCE_TYPE=$(get_config INSTANCE_TYPE)
-REGION=$(get_config REGION)
-VPC_IP_BLOCK=$(get_config VPC_IP_BLOCK)
-DB_INSTANCE_TYPE=$(get_config DB_INSTANCE_TYPE)
-DB_NAME=$(get_config DB_NAME)
+SEC_GROUP_NAME=$(get_config SEC_GROUP_NAME "WordPressScalerSecurityGroup")
+SEC_GROUP_DESC=$(get_config SEC_GROUP_DESC "Security Group for Plesk WordPress Scaler")
+TAG=$(get_config TAG "WordPressScaler")
+AMI=$(get_config AMI "ami-64385917")
+DEVICE_NAME=$(get_config DEVICE_NAME "WordPressScalerDisk")
+INSTANCE_TYPE=$(get_config INSTANCE_TYPE "m3.medium")
+REGION=$(get_config REGION "eu-west-1")
+VPC_IP_BLOCK=$(get_config VPC_IP_BLOCK "172.31.0.0/16")
+DB_INSTANCE_TYPE=$(get_config DB_INSTANCE_TYPE "db.t2.small")
+DB_NAME=$(get_config DB_NAME "WordPressScalerDB")
 DB_PASSWORD=$(get_config DB_PASSWORD)
-DB_USERNAME=$(get_config DB_USERNAME)
-DB_ENGINE=$(get_config DB_ENGINE)
+DB_USERNAME=$(get_config DB_USERNAME "WordPressScalerDBUser")
+DB_ENGINE=$(get_config DB_ENGINE "mariadb")
 
 # Other settings
 LOG_FILE="manage_wordpress.log"
