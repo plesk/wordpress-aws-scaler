@@ -1,0 +1,1700 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Parallax One\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-05-12 18:54+0200\n"
+"PO-Revision-Date: 2016-05-12 18:56+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e;esc_html__;esc_html_e\n"
+"X-Poedit-Basepath: ../\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPath-1: inc\n"
+
+#: class-tgm-plugin-activation.php:333
+#: functions.php:616
+msgid "Install Required Plugins"
+msgstr "Установить Необходимые Плагины"
+
+#: class-tgm-plugin-activation.php:334
+#: functions.php:617
+msgid "Install Plugins"
+msgstr "Установить Плагины"
+
+#: class-tgm-plugin-activation.php:335
+#: functions.php:618
+#, php-format
+msgid "Installing Plugin: %s"
+msgstr "Установка Плагина: %s"
+
+#: class-tgm-plugin-activation.php:336
+#: functions.php:619
+msgid "Something went wrong with the plugin API."
+msgstr "Что-то пошло не так с API плагина."
+
+#: class-tgm-plugin-activation.php:397
+#: functions.php:630
+msgid "Return to Required Plugins Installer"
+msgstr "Вернуться к Установщику Необходимых Плагинов"
+
+#: class-tgm-plugin-activation.php:398
+msgid "Return to the dashboard"
+msgstr "Вернуться к Консоли"
+
+#: class-tgm-plugin-activation.php:399
+#: class-tgm-plugin-activation.php:3029
+#: functions.php:631
+msgid "Plugin activated successfully."
+msgstr "Плагин успешно активирован."
+
+#: class-tgm-plugin-activation.php:400
+msgid "The following plugin was activated successfully:"
+msgstr "Следующие плагины были успешно активированы:"
+
+#: class-tgm-plugin-activation.php:401
+#, php-format
+msgid "No action taken. Plugin %1$s was already active."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:402
+#, php-format
+msgid "Plugin not activated. A higher version of %s is needed for this theme. Please update the plugin."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:403
+#, php-format
+msgid "All plugins installed and activated successfully. %1$s"
+msgstr "Все плагины установлены и успешно активированы. %1$s"
+
+#: class-tgm-plugin-activation.php:404
+msgid "Dismiss this notice"
+msgstr "Закрыть это уведомление"
+
+#: class-tgm-plugin-activation.php:405
+msgid "Please contact the administrator of this site for help."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:521
+#, fuzzy
+msgid "Update Required"
+msgstr "Необходимый"
+
+#: class-tgm-plugin-activation.php:635
+msgid "Set the parent_slug config variable instead."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:828
+#: class-tgm-plugin-activation.php:3438
+msgid "Return to the Dashboard"
+msgstr "Вернуться к Консоли"
+
+#: class-tgm-plugin-activation.php:935
+msgid "The remote plugin package does not contain a folder with the desired slug and renaming did not work."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:935
+#: class-tgm-plugin-activation.php:938
+msgid "Please contact the plugin provider and ask them to package their plugin according to the WordPress guidelines."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:938
+msgid "The remote plugin package consists of more than one file, but the files are not packaged in a folder."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2167
+msgid "Required"
+msgstr "Необходимый"
+
+#: class-tgm-plugin-activation.php:2170
+msgid "Recommended"
+msgstr "Рекомендуемый"
+
+#: class-tgm-plugin-activation.php:2186
+msgid "WordPress Repository"
+msgstr "Репозиторий WordPress"
+
+#: class-tgm-plugin-activation.php:2189
+msgid "External Source"
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2192
+#, fuzzy
+msgid "Pre-Packaged"
+msgstr "Пред-пакет"
+
+#: class-tgm-plugin-activation.php:2209
+msgid "Not Installed"
+msgstr "Не установлен"
+
+#: class-tgm-plugin-activation.php:2213
+msgid "Installed But Not Activated"
+msgstr "Установлен, но не активирован"
+
+#: class-tgm-plugin-activation.php:2215
+#, fuzzy
+msgid "Active"
+msgstr "Активировать"
+
+#: class-tgm-plugin-activation.php:2221
+msgid "Required Update not Available"
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2224
+#, fuzzy
+msgid "Requires Update"
+msgstr "Необходимый"
+
+#: class-tgm-plugin-activation.php:2227
+#, fuzzy
+msgid "Update recommended"
+msgstr "Рекомендуемый"
+
+#: class-tgm-plugin-activation.php:2379
+#, fuzzy
+msgid "Installed version:"
+msgstr "Установить Плагины"
+
+#: class-tgm-plugin-activation.php:2387
+msgid "Minimum required version:"
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2399
+msgid "Available version:"
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2422
+#, fuzzy, php-format
+msgid "No plugins to install, update or activate. <a href=\"%1$s\">Return to the Dashboard</a>"
+msgstr "Не выбран плагин для установки или активации. <a href=\"%1$s\" title=\"Вернуться к Консоли\">Вернуться к Консоли</a>"
+
+#: class-tgm-plugin-activation.php:2436
+msgid "Plugin"
+msgstr "Плагин"
+
+#: class-tgm-plugin-activation.php:2437
+msgid "Source"
+msgstr "Исходник"
+
+#: class-tgm-plugin-activation.php:2438
+msgid "Type"
+msgstr "Тип"
+
+#: class-tgm-plugin-activation.php:2442
+#, fuzzy
+msgid "Version"
+msgstr "Ознакомиться с PRO-версией"
+
+#: class-tgm-plugin-activation.php:2443
+msgid "Status"
+msgstr "Статус"
+
+#: class-tgm-plugin-activation.php:2570
+msgid "Upgrade message from the plugin author:"
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2603
+msgid "Install"
+msgstr "Установить"
+
+#: class-tgm-plugin-activation.php:2609
+msgid "Update"
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2612
+msgid "Activate"
+msgstr "Активировать"
+
+#: class-tgm-plugin-activation.php:2643
+msgid "No plugins were selected to be installed. No action taken."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2645
+msgid "No plugins were selected to be updated. No action taken."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2681
+msgid "No plugins are available to be installed at this time."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2683
+msgid "No plugins are available to be updated at this time."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2788
+msgid "No plugins were selected to be activated. No action taken."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:2814
+msgid "No plugins are available to be activated at this time."
+msgstr ""
+
+#: class-tgm-plugin-activation.php:3028
+msgid "Plugin activation failed."
+msgstr "Не удалось активировать плагин."
+
+#: class-tgm-plugin-activation.php:3362
+#, fuzzy, php-format
+msgid "Updating Plugin %1$s (%2$d/%3$d)"
+msgstr "Установка Плагина %1$s (%2$d/%3$d)"
+
+#: class-tgm-plugin-activation.php:3364
+#, php-format
+msgid "An error occurred while installing %1$s: <strong>%2$s</strong>."
+msgstr "При установке %1$s: <strong>%2$s</strong> произошла ошибка."
+
+#: class-tgm-plugin-activation.php:3365
+#, php-format
+msgid "The installation of %1$s failed."
+msgstr "Установка %1$s завершилась ошибкой."
+
+# there is duplicate
+#: class-tgm-plugin-activation.php:3369
+msgid "The installation and activation process is starting. This process may take a while on some hosts, so please be patient."
+msgstr "Начинается процесс установки и активации. На некоторых серверах этот процесс может занять некоторое время, поэтому, пожалуйста, будьте терпеливы."
+
+#: class-tgm-plugin-activation.php:3370
+#, php-format
+msgid "%1$s installed and activated successfully."
+msgstr "%1$s установлен и активирован успешно."
+
+#: class-tgm-plugin-activation.php:3370
+#: class-tgm-plugin-activation.php:3376
+msgid "Show Details"
+msgstr "Показать подробности"
+
+#: class-tgm-plugin-activation.php:3370
+#: class-tgm-plugin-activation.php:3376
+msgid "Hide Details"
+msgstr "Скрыть подробности"
+
+#: class-tgm-plugin-activation.php:3371
+msgid "All installations and activations have been completed."
+msgstr "Все процессы установки и активации завершены."
+
+#: class-tgm-plugin-activation.php:3372
+#, php-format
+msgid "Installing and Activating Plugin %1$s (%2$d/%3$d)"
+msgstr "Установка и активация плагина %1$s (%2$d/%3$d)"
+
+#: class-tgm-plugin-activation.php:3375
+msgid "The installation process is starting. This process may take a while on some hosts, so please be patient."
+msgstr "Начинается процесс установки. На некоторых серверах этот процесс может занять некоторое время, поэтому будьте терпеливы, пожалуйста."
+
+#: class-tgm-plugin-activation.php:3376
+#, php-format
+msgid "%1$s installed successfully."
+msgstr "%1$s успешно установлен."
+
+#: class-tgm-plugin-activation.php:3377
+msgid "All installations have been completed."
+msgstr "Все процессы установки завершены."
+
+#: class-tgm-plugin-activation.php:3378
+#, php-format
+msgid "Installing Plugin %1$s (%2$d/%3$d)"
+msgstr "Установка Плагина %1$s (%2$d/%3$d)"
+
+#: comments.php:35
+#: comments.php:58
+msgid "Comment navigation"
+msgstr "Навигация по комментариям"
+
+#: comments.php:38
+#: comments.php:61
+msgid "Older Comments"
+msgstr "Более Старые Комментарии"
+
+#: comments.php:39
+#: comments.php:62
+msgid "Newer Comments"
+msgstr "Новые Комментарии"
+
+#: comments.php:74
+msgid "Comments are closed."
+msgstr "Комментарии закрыты."
+
+#: content-contact.php:33
+#: content-page.php:33
+msgid "Edit"
+msgstr "Правка"
+
+#: content-none.php:13
+msgid "Nothing Found"
+msgstr "Ничего не найдено"
+
+#: content-none.php:19
+#, php-format
+msgid "Ready to publish your first post? <a href=\"%1$s\">Get started here</a>."
+msgstr "Готовы опубликовать свою первую запись? <a href=\"%1$s\">Начните отсюда</a>."
+
+#: content-none.php:23
+msgid "Sorry, but nothing matched your search terms. Please try again with some different keywords."
+msgstr "Извините, но ничего, подходящего под ваш поисковый запрос, не найдено. Пожалуйста, попробуйте ещё раз, используя другие ключевые слова."
+
+#: content-none.php:28
+msgid "It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help."
+msgstr "Кажется, мы не можем найти то, что вы ищете. Возможно, поиск может помочь вам."
+
+#: content-page.php:26
+#: content-search.php:91
+#: content-single-download.php:28
+#: content-single.php:32
+#: content.php:81
+msgid "Pages:"
+msgstr "Страницы:"
+
+# Why it is here????
+#: content-search.php:53
+#: content.php:52
+msgid ", "
+msgstr ", "
+
+#: content-search.php:59
+msgid "Posted in "
+msgstr "Опубликовано в"
+
+#: content-search.php:72
+#: content-single.php:23
+#: content.php:62
+msgid "No comments"
+msgstr "Нет комментариев"
+
+#: content-search.php:72
+#: content-single.php:23
+#: content.php:62
+msgid "One comment"
+msgstr "Один комментарий"
+
+#: content-search.php:72
+#: content-single.php:23
+#: content.php:62
+#, fuzzy, php-format
+msgid "% comments"
+msgstr "% комментариев"
+
+#: content.php:7
+#, php-format
+msgid "Blog post: %s"
+msgstr ""
+
+#: content.php:74
+#, fuzzy, php-format
+msgid "Read more %s ..."
+msgstr "Читать далее"
+
+#: content.php:74
+msgid "about "
+msgstr ""
+
+#: footer.php:14
+msgid "Widgets Area 1"
+msgstr ""
+
+#: footer.php:22
+msgid "Widgets Area 2"
+msgstr ""
+
+#: footer.php:30
+msgid "Widgets Area 3"
+msgstr ""
+
+#: footer.php:38
+msgid "Widgets Area 4"
+msgstr ""
+
+#: footer.php:59
+#: footer.php:60
+#, fuzzy
+msgid "Secondary Menu"
+msgstr "Основное меню"
+
+#: footer.php:125
+#, fuzzy
+msgid "powered by "
+msgstr "работает на"
+
+#: footer.php:125
+msgid "WordPress"
+msgstr "WordPress"
+
+#: functions.php:47
+msgid "Primary Menu"
+msgstr "Основное меню"
+
+#: functions.php:48
+msgid "Footer Menu"
+msgstr "Меню нижнего колонтитула"
+
+#: functions.php:133
+msgid "Install Intergeo Maps - Google Maps Plugin"
+msgstr ""
+
+#: functions.php:134
+#, fuzzy
+msgid "In order to use map section, you need to install Intergeo Maps plugin then use it to create a map and paste the generated shortcode in Customize -> Contact section -> Map shortcode"
+msgstr "Для того, чтобы использовать эту секцию, пожалуйста, установите плагин Intergeo Maps, затем используйте его для создания карты. Полученный shortcode карты вы можете копировать в эту форму"
+
+#: functions.php:140
+#, fuzzy
+msgid "Install Pirate Forms"
+msgstr "Установить Плагины"
+
+#: functions.php:141
+msgid "Makes your contact page more engaging by creating a good-looking contact form on your website. The interaction with your visitors was never easier."
+msgstr ""
+
+#: functions.php:147
+msgid "Switch \"Front page displays\" to \"Your latest posts\" "
+msgstr ""
+
+#: functions.php:148
+msgid "In order to have the one page look for your website, please go to Customize -> Advanced options and switch \"Front page displays\" to \"Your latest posts\""
+msgstr ""
+
+#: functions.php:165
+msgid "Parallax One Team Member"
+msgstr "Члены команды Parallax One"
+
+#: functions.php:166
+msgid "Parallax One Services"
+msgstr "Сервисы Parallax One"
+
+#: functions.php:167
+#, fuzzy
+msgid "Parallax One Testimonials"
+msgstr "Клиенты Parallax One"
+
+#: functions.php:181
+msgid "Sidebar"
+msgstr "Боковая панель"
+
+#: functions.php:193
+#, php-format
+msgid "Footer area %d"
+msgstr "Нижний колонтитул %d"
+
+#: functions.php:229
+msgid "Documentation"
+msgstr "Документация"
+
+#: functions.php:230
+msgid "Support Forum"
+msgstr "Форум поддержки"
+
+#: functions.php:231
+msgid "Upgrade to PRO"
+msgstr ""
+
+#: functions.php:298
+msgid "expand child menu"
+msgstr ""
+
+#: functions.php:299
+msgid "collapse child menu"
+msgstr ""
+
+#: functions.php:371
+#: functions.php:372
+#: functions.php:373
+msgid "Lorem Ipsum"
+msgstr "Lorem Ipsum"
+
+#: functions.php:371
+#: functions.php:372
+#: functions.php:373
+msgid "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla nec purus feugiat, molestie ipsum et, consequat nibh. Etiam non elit dui. Nullam vel eros sit amet arcu vestibulum accumsan in in leo."
+msgstr "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla nec purus feugiat, molestie ipsum et, consequat nibh. Etiam non elit dui. Nullam vel eros sit amet arcu vestibulum accumsan in in leo."
+
+#: functions.php:393
+msgid "Albert Jacobs"
+msgstr "Изя Шнеперсон"
+
+#: functions.php:393
+msgid "Founder & CEO"
+msgstr "Основатель & Ген. Директор"
+
+#: functions.php:394
+msgid "Tonya Garcia"
+msgstr "Тоня Гарсиа"
+
+#: functions.php:394
+msgid "Account Manager"
+msgstr "Менеджер учетных записей"
+
+#: functions.php:395
+msgid "Linda Guthrie"
+msgstr "Линда Гутри"
+
+#: functions.php:395
+#, fuzzy
+msgid "Business Development"
+msgstr "Деловая разработка"
+
+#: functions.php:432
+#: functions.php:433
+#: functions.php:434
+msgid "Happy Customer"
+msgstr "Довольный клиент"
+
+#: functions.php:432
+#: functions.php:433
+#: functions.php:434
+msgid "Lorem ipsum"
+msgstr "Lorem ipsum"
+
+#: functions.php:432
+#: functions.php:433
+#: functions.php:434
+msgid "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla nec purus feugiat, molestie ipsum et, consequat nibh. Etiam non elit dui. Nullam vel eros sit amet arcu vestibulum accumsan in in leo. Fusce malesuada vulputate faucibus. Integer in hendrerit nisi. Praesent a hendrerit urna. In non imperdiet elit, sed molestie odio. Fusce ac metus non purus sollicitudin laoreet."
+msgstr "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla nec purus feugiat, molestie ipsum et, consequat nibh. Etiam non elit dui. Nullam vel eros sit amet arcu vestibulum accumsan in in leo. Fusce malesuada vulputate faucibus. Integer in hendrerit nisi. Praesent a hendrerit urna. In non imperdiet elit, sed molestie odio. Fusce ac metus non purus sollicitudin laoreet."
+
+#: functions.php:632
+#, php-format
+msgid "All plugins installed and activated successfully. %s"
+msgstr "Все плагины установлены и активированы успешно. %s"
+
+#: functions.php:750
+msgid "Pingback:"
+msgstr ""
+
+#: functions.php:750
+#: functions.php:774
+#, fuzzy
+msgid "(Edit)"
+msgstr "Правка"
+
+#: functions.php:762
+#, php-format
+msgid "<span itemprop=\"name\">%s </span><span class=\"says\">says:</span>"
+msgstr ""
+
+#: functions.php:765
+msgid "Your comment is awaiting moderation."
+msgstr ""
+
+#: functions.php:771
+#, fuzzy, php-format
+msgid "%1$s at %2$s"
+msgstr "%1$s: %2$s"
+
+#: functions.php:1208
+msgid "Oops! That page can&rsquo;t be found."
+msgstr "Уупс! Эта страница не найдена."
+
+#: functions.php:1212
+msgid "It looks like nothing was found at this location. Maybe try one of the links below or a search?"
+msgstr "Видимо, по указанному адресу ничего не найдено. Может стоит использовать ссылки из списка ниже или воспользоваться поиском?"
+
+#: header.php:30
+#, fuzzy
+msgid "Skip to content"
+msgstr "Содержимое Секции Сервис"
+
+#: header.php:91
+#, fuzzy
+msgid "Toggle Menu"
+msgstr "Меню нижнего колонтитула"
+
+#: header.php:92
+msgid "Toggle navigation"
+msgstr "Переключить навигацию"
+
+#: search.php:29
+#, php-format
+msgid "Search Results for: %s"
+msgstr "Результаты поиска для: %s"
+
+#: sidebar.php:13
+#, fuzzy
+msgid "Main sidebar"
+msgstr "Основной заголовок"
+
+#: inc/customizer.php:17
+msgid "<span class=\"customize-control-title\">Choose the character sets you want</span>"
+msgstr ""
+
+#: inc/customizer.php:41
+#, fuzzy
+msgid "Appearance"
+msgstr "Внешний вид"
+
+#: inc/customizer.php:54
+msgid "Text color"
+msgstr ""
+
+#: inc/customizer.php:72
+msgid "Title color"
+msgstr ""
+
+#: inc/customizer.php:80
+msgid "General options"
+msgstr "Общие настройки"
+
+#: inc/customizer.php:82
+#, fuzzy
+msgid "Parallax One theme general appearance options"
+msgstr "Общие настройки темы Paralax One"
+
+#: inc/customizer.php:94
+msgid "Logo"
+msgstr "Логотип"
+
+#: inc/customizer.php:107
+msgid "Header visibility"
+msgstr ""
+
+#: inc/customizer.php:108
+#, fuzzy
+msgid "If this box is checked, the header will toggle on frontpage."
+msgstr "Если вы установите эту галочку, прелоадер будет отключен на главной странице."
+
+#: inc/customizer.php:122
+msgid "Header section"
+msgstr "Секция Заголовок"
+
+#: inc/customizer.php:128
+#: inc/customizer.php:408
+msgid "Content"
+msgstr "Содержимое"
+
+#: inc/customizer.php:140
+msgid "Header Logo"
+msgstr "Логотип в Секции Заголовок"
+
+#: inc/customizer.php:148
+msgid "Simple, Reliable and Awesome."
+msgstr "Простой, Надежный и Потрясающий"
+
+#: inc/customizer.php:153
+#: inc/customizer.php:331
+#: inc/customizer.php:389
+#: inc/customizer.php:446
+#: inc/customizer.php:517
+#: inc/customizer.php:591
+#: inc/customizer.php:639
+msgid "Main title"
+msgstr "Основной заголовок"
+
+#: inc/customizer.php:161
+#: inc/customizer.php:339
+#: inc/customizer.php:454
+#: inc/customizer.php:586
+msgid "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+msgstr "Широкая электрификация южных губерний даст мощный толчок подъёму сельского хозяйства."
+
+#: inc/customizer.php:166
+#: inc/customizer.php:344
+#: inc/customizer.php:459
+#: inc/customizer.php:530
+msgid "Subtitle"
+msgstr "Подзаголовок"
+
+#: inc/customizer.php:175
+#: inc/customizer.php:599
+msgid "GET STARTED"
+msgstr "НАЧАТЬ"
+
+#: inc/customizer.php:180
+#: inc/customizer.php:604
+msgid "Button label"
+msgstr "Метка на кнопке"
+
+#: inc/customizer.php:188
+#: inc/customizer.php:612
+msgid "#"
+msgstr "#"
+
+#: inc/customizer.php:193
+#: inc/customizer.php:617
+msgid "Button link"
+msgstr "Ссылка на кнопке"
+
+#: inc/customizer.php:203
+msgid "Logos Bar"
+msgstr "Секция Логотипы"
+
+#: inc/customizer.php:225
+#: inc/customizer.php:773
+msgid "Add new social icon"
+msgstr "Добавить новый значок соцсети"
+
+#: inc/customizer.php:236
+#, fuzzy
+msgid "Background"
+msgstr "Фон Секции Лента"
+
+#: inc/customizer.php:246
+#, fuzzy
+msgid "Parallax effect"
+msgstr "Parallax One"
+
+#: inc/customizer.php:247
+#, fuzzy
+msgid "If this box is checked, the parallax effect is enabled."
+msgstr "Если вы установите эту галочку, прелоадер будет отключен на главной странице."
+
+#: inc/customizer.php:261
+msgid "First layer"
+msgstr ""
+
+#: inc/customizer.php:274
+#, fuzzy
+msgid "Second layer"
+msgstr "Порядок секций"
+
+#: inc/customizer.php:291
+msgid "Overlay color and transparency"
+msgstr ""
+
+#: inc/customizer.php:305
+msgid "Services section"
+msgstr "Секция Услуги"
+
+#: inc/customizer.php:317
+#: inc/customizer.php:504
+msgid "Use pinterest layout?"
+msgstr ""
+
+#: inc/customizer.php:318
+#, fuzzy
+msgid "If this box is checked, the Services section will use pinterest-style layout."
+msgstr "Если снять эту галочку, комментарии на страницах будут отключены."
+
+#: inc/customizer.php:326
+msgid "Our Services"
+msgstr "Наши Сервисы"
+
+#: inc/customizer.php:362
+#, fuzzy
+msgid "Add new service box"
+msgstr "Добавить новый значок соцсети"
+
+#: inc/customizer.php:378
+msgid "About section"
+msgstr "Секция О нас"
+
+#: inc/customizer.php:384
+msgid "Our Story"
+msgstr "Наша История"
+
+#: inc/customizer.php:398
+msgid "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+msgstr "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+
+#: inc/customizer.php:412
+msgid "Allowed html: p,br,em,strong,a,button,ul,li"
+msgstr ""
+
+#: inc/customizer.php:423
+msgid "Image"
+msgstr "Изображение"
+
+#: inc/customizer.php:435
+msgid "Team section"
+msgstr "Секция Команда"
+
+#: inc/customizer.php:441
+msgid "Our Team"
+msgstr "Наша Команда"
+
+#: inc/customizer.php:476
+#, fuzzy
+msgid "Add new team member"
+msgstr "Члены команды Parallax One"
+
+#: inc/customizer.php:492
+msgid "Testimonial section"
+msgstr "Секция Рекомендации"
+
+#: inc/customizer.php:505
+#, fuzzy
+msgid "If this box is checked, the Testimonials section will use pinterest-style layout."
+msgstr "Если снять эту галочку, комментарии на страницах будут отключены."
+
+#: inc/customizer.php:512
+msgid "Happy Customers"
+msgstr "Довольные клиенты"
+
+#: inc/customizer.php:525
+msgid "Cloud computing subscription model out of the box proactive solution."
+msgstr ""
+
+#: inc/customizer.php:549
+#, fuzzy
+msgid "Add new testimonial"
+msgstr "Добавить новый значок соцсети"
+
+#: inc/customizer.php:567
+msgid "Ribbon section"
+msgstr "Секция Лента"
+
+#: inc/customizer.php:579
+msgid "Ribbon Background"
+msgstr "Фон Секции Лента"
+
+#: inc/customizer.php:629
+msgid "Latest news section"
+msgstr "Секция Последние новости"
+
+#: inc/customizer.php:634
+msgid "Latest news"
+msgstr "Последние новости"
+
+#: inc/customizer.php:652
+msgid "Contact section"
+msgstr "Секция Контакты"
+
+#: inc/customizer.php:668
+#, fuzzy
+msgid "Add new contact field"
+msgstr "Добавить новое поле"
+
+#: inc/customizer.php:685
+#: inc/customizer.php:722
+msgid "Map shortcode"
+msgstr "Shortcode карты"
+
+#: inc/customizer.php:686
+#, fuzzy
+msgid "To use this section please install <a href=\"https://wordpress.org/plugins/intergeo-maps/\">Intergeo Maps</a> plugin then use it to create a map and paste here the shortcode generated"
+msgstr "Для того, чтобы использовать эту секцию, пожалуйста, установите плагин Intergeo Maps, затем используйте его для создания карты. Полученный shortcode карты вы можете копировать в эту форму"
+
+#: inc/customizer.php:699
+msgid "Contact page"
+msgstr "Страница Контакты"
+
+#: inc/customizer.php:709
+msgid "Contact form shortcode"
+msgstr "shortcode контактной формы"
+
+#: inc/customizer.php:710
+msgid "Create a form, copy the shortcode generated and paste it here. We recommend <a href=\"http://themeisle.com/plugins/pirate-forms\" target=\"_blank\">Pirate Forms</a> but you can use any plugin you like."
+msgstr ""
+
+#: inc/customizer.php:723
+#, fuzzy
+msgid "To use this section please install <a href=\"https://wordpress.org/plugins/intergeo-maps/\" target=\"_blank\">Intergeo Maps</a> plugin then use it to create a map and paste here the shortcode generated"
+msgstr "Для того, чтобы использовать эту секцию, пожалуйста, установите плагин Intergeo Maps, затем используйте его для создания карты. Полученный shortcode карты вы можете копировать в эту форму"
+
+#: inc/customizer.php:734
+msgid "Footer options"
+msgstr "Настройки нижнего колонтитула"
+
+#: inc/customizer.php:736
+msgid "The main content of this section is customizable in: Customize -> Widgets -> Footer area. "
+msgstr "Основное содержание этой секции можно настроить в: Настроить -> Виджеты -> Нижний колонтитул."
+
+#: inc/customizer.php:752
+#, fuzzy
+msgid "Copyright"
+msgstr "Авторское право"
+
+#: inc/customizer.php:787
+#, fuzzy
+msgid "Advanced options"
+msgstr "Общие настройки"
+
+#: inc/customizer.php:789
+#, fuzzy
+msgid "Parallax One theme general options"
+msgstr "Общие настройки темы Paralax One"
+
+#: inc/customizer.php:840
+msgid "Disable preloader?"
+msgstr "Отключить прелоадер"
+
+#: inc/customizer.php:841
+msgid "If this box is checked, the preloader will be disabled from homepage."
+msgstr "Если вы установите эту галочку, прелоадер будет отключен на главной странице."
+
+#: inc/customizer.php:862
+msgid "Cyrillic"
+msgstr ""
+
+#: inc/customizer.php:872
+msgid "Vietnamese"
+msgstr ""
+
+#: inc/customizer.php:882
+msgid "Greek"
+msgstr ""
+
+#: inc/customizer.php:893
+#: inc/customizer.php:903
+#, fuzzy
+msgid "Sections management"
+msgstr "Порядок секций"
+
+#: inc/customizer.php:906
+msgid "Check out the <a href=\"http://themeisle.com/plugins/parallax-one-plus/\">PRO version</a> for full control over the frontpage SECTIONS ORDER!"
+msgstr ""
+
+#: inc/customizer.php:911
+#, fuzzy
+msgid "Portfolio section"
+msgstr "Секция О нас"
+
+#: inc/customizer.php:921
+msgid "Portfolio"
+msgstr ""
+
+#: inc/customizer.php:924
+msgid "Check out the <a href=\"http://themeisle.com/plugins/parallax-one-plus/\">PRO version</a> for full control over the NEW PORTFOLIO SECTION!"
+msgstr ""
+
+#: inc/customizer.php:929
+msgid "New Features"
+msgstr ""
+
+#: inc/customizer.php:939
+#, fuzzy
+msgid "Header Layout"
+msgstr "Логотип в Секции Заголовок"
+
+#: inc/customizer.php:942
+msgid "Check out the <a href=\"http://themeisle.com/plugins/parallax-one-plus/\">PRO version</a> for full control over the HEADER'S LAYOUT SECTION!"
+msgstr ""
+
+#: inc/customizer.php:953
+#, fuzzy
+msgid "Color scheme"
+msgstr "Цвета"
+
+#: inc/customizer.php:956
+msgid "Check out the <a href=\"http://themeisle.com/plugins/parallax-one-plus/\">PRO version</a> for full control over the COLOR SCHEME!"
+msgstr ""
+
+#: inc/customizer.php:967
+msgid "Preloader"
+msgstr ""
+
+#: inc/customizer.php:970
+msgid "Check out the <a href=\"http://themeisle.com/plugins/parallax-one-plus/\">PRO version</a> for full control over the PRELOADER IMAGE!"
+msgstr ""
+
+#: inc/customizer.php:980
+msgid "Opacity"
+msgstr ""
+
+#: inc/customizer.php:983
+msgid "Check out the <a href=\"http://themeisle.com/plugins/parallax-one-plus/\">PRO version</a> for full control over the background opacity and color of each section!"
+msgstr ""
+
+#: inc/extras.php:52
+#, php-format
+msgid "Page %s"
+msgstr "Страница %s"
+
+#: inc/template-tags.php:26
+msgid "Older posts"
+msgstr "Старые записи"
+
+#: inc/template-tags.php:30
+msgid "Newer posts"
+msgstr "Новые записи"
+
+#: inc/template-tags.php:82
+#, php-format
+msgid "Posted in %1$s"
+msgstr "Опубликовано в %1$s"
+
+#: inc/template-tags.php:88
+#, php-format
+msgid "Tagged %1$s"
+msgstr "Отмечено в %1$s"
+
+#: inc/template-tags.php:94
+msgid "Leave a comment"
+msgstr "Оставить комментарий"
+
+#: inc/template-tags.php:94
+msgid "1 Comment"
+msgstr "1 Комментарий"
+
+#: inc/template-tags.php:94
+#, fuzzy
+msgid "% Comments"
+msgstr "% Комментариев"
+
+#: inc/template-tags.php:115
+#, php-format
+msgid "Category: %s"
+msgstr "Рубрика: %s"
+
+#: inc/template-tags.php:117
+#, php-format
+msgid "Tag: %s"
+msgstr "Метка: %s"
+
+#: inc/template-tags.php:119
+#, php-format
+msgid "Author: %s"
+msgstr "Автор: %s"
+
+#: inc/template-tags.php:121
+#, php-format
+msgid "Year: %s"
+msgstr "Год: %s"
+
+#: inc/template-tags.php:123
+#, php-format
+msgid "Month: %s"
+msgstr "Месяц: %s"
+
+#: inc/template-tags.php:125
+#, php-format
+msgid "Day: %s"
+msgstr "День: %s"
+
+#: inc/template-tags.php:147
+#, php-format
+msgid "Archives: %s"
+msgstr "Архивы: %s"
+
+#: inc/template-tags.php:151
+#, php-format
+msgid "%1$s: %2$s"
+msgstr "%1$s: %2$s"
+
+#: inc/template-tags.php:153
+msgid "Archives"
+msgstr "Архивы"
+
+#: inc/admin/class-remote-notification-client.php:193
+#, php-format
+msgid "The server response was invalid (code %s)"
+msgstr ""
+
+#: inc/admin/class-remote-notification-client.php:199
+msgid "The server response is empty"
+msgstr ""
+
+#: inc/admin/class-remote-notification-client.php:205
+msgid "Cannot decode the response content"
+msgstr ""
+
+#: inc/admin/class-remote-notification-client.php:441
+#, fuzzy
+msgid "Dismiss notification"
+msgstr "Закрыть это уведомление"
+
+#: inc/admin/class-remote-notification-client.php:443
+msgid "Dismiss"
+msgstr ""
+
+#: inc/admin/welcome-screen/welcome-screen.php:62
+#, php-format
+msgid "Welcome! Thank you for choosing Parallax One! To fully take advantage of the best our theme can offer please make sure you visit our %swelcome page%s."
+msgstr ""
+
+#: inc/admin/welcome-screen/welcome-screen.php:63
+msgid "Get started with Parallax One"
+msgstr ""
+
+#: inc/admin/welcome-screen/welcome-screen.php:98
+#: inc/admin/welcome-screen/sections/actions-required.php:63
+msgid "Hooray! There are no required actions for you right now."
+msgstr ""
+
+#: inc/admin/welcome-screen/welcome-screen.php:130
+msgid "View Theme Info"
+msgstr ""
+
+#: inc/admin/welcome-screen/welcome-screen.php:179
+#: inc/admin/welcome-screen/sections/getting-started.php:35
+#, fuzzy
+msgid "Getting started"
+msgstr "Настройки"
+
+#: inc/admin/welcome-screen/welcome-screen.php:180
+#, fuzzy
+msgid "Actions required"
+msgstr "Порядок секций"
+
+#: inc/admin/welcome-screen/welcome-screen.php:181
+msgid "Contribute"
+msgstr ""
+
+#: inc/admin/welcome-screen/welcome-screen.php:182
+msgid "Changelog"
+msgstr ""
+
+#: inc/admin/welcome-screen/welcome-screen.php:183
+msgid "Free VS PRO"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/actions-required.php:9
+msgid "Keep up with Parallax One's latest news"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:22
+msgid "Smooth, catchy and easy scrolling experience."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:29
+msgid "Default frontpage sections"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:30
+msgid "Header, Services, About, Team, Testimonial, Ribbon, Latest news and Contact sections are available on frontpage."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:37
+msgid "Mobile friendly"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:38
+msgid "Responsive layout. Works on every device."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:45
+msgid "Unlimited color option"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:46
+msgid "You can change the colors of each section. You have unlimited options."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:53
+#, fuzzy
+msgid "Shop section"
+msgstr "Секция О нас"
+
+#: inc/admin/welcome-screen/sections/free_pro.php:54
+msgid "Ready for e-commerce. You can build an online store here."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:62
+msgid "Showcase your best projects in the portfolio section."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:69
+#, fuzzy
+msgid "Shortcodes section"
+msgstr "Секция Услуги"
+
+#: inc/admin/welcome-screen/sections/free_pro.php:70
+msgid "Easily use shortcodes to integrate the plugins you need."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:77
+#, fuzzy
+msgid "Features ribbon section"
+msgstr "Секция Лента"
+
+#: inc/admin/welcome-screen/sections/free_pro.php:78
+msgid "Put your best skills in the spotlight in the features ribbon section."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:85
+#, fuzzy
+msgid "Sections order/ Hiding sections"
+msgstr "Порядок секций"
+
+#: inc/admin/welcome-screen/sections/free_pro.php:86
+msgid "Arrange the sections by your priorities."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:93
+msgid "Change the layout of the header"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:94
+msgid "Select the best looking layout for your site's top header."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:101
+#, fuzzy
+msgid "Support"
+msgstr "Форум поддержки"
+
+#: inc/admin/welcome-screen/sections/free_pro.php:102
+msgid "You will benefit of our full support for any issues you have with the theme."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/free_pro.php:109
+#, fuzzy
+msgid "Get Parallax One Plus now!"
+msgstr "Клиенты Parallax One"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:18
+#, php-format
+msgid "Welcome to %1$s!"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:26
+msgid "Our most elegant and professional one-page theme, which turns your scrolling into a smooth and pleasant experience."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:27
+msgid "We want to make sure you have the best experience using Parallax One and that is why we gathered here all the necessary informations for you. We hope you will enjoy using Parallax One, as much as we enjoy creating great products."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:37
+msgid "Customize everything in a single place."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:38
+msgid "Using the WordPress Customizer you can easily customize every aspect of the theme."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:39
+#, fuzzy
+msgid "Go to Customizer"
+msgstr "Довольный клиент"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:47
+msgid "FAQ"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:53
+msgid "Create a child theme"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:54
+msgid "If you want to make changes to the theme's files, those changes are likely to be overwritten when you next update the theme. In order to prevent that from happening, you need to create a child theme. For this, please follow the documentation below."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:55
+#: inc/admin/welcome-screen/sections/getting-started.php:61
+#: inc/admin/welcome-screen/sections/getting-started.php:67
+#: inc/admin/welcome-screen/sections/getting-started.php:73
+#: inc/admin/welcome-screen/sections/getting-started.php:79
+#: inc/admin/welcome-screen/sections/getting-started.php:88
+#: inc/admin/welcome-screen/sections/getting-started.php:94
+#: inc/admin/welcome-screen/sections/getting-started.php:100
+#: inc/admin/welcome-screen/sections/getting-started.php:106
+msgid "View how to do this"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:59
+msgid "How to Internationalize Your Website"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:60
+msgid "Although English is the most used language on the internet, you should consider all your web users as well. Find out what it takes to make your website ready for foreign markets from this document."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:65
+msgid "Change dimensions for footer social icons"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:66
+msgid "In the below documentation you will find an easy way to change the default dimensions for you social icons."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:71
+msgid "Change customizer in a child theme"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:72
+msgid "If you want to add or remove customizer controls, check out our documentation to find out how."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:77
+msgid "Build a landing page with a drag-and-drop content builder"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:78
+msgid "In the below documentation you will find an easy way to build a great looking landing page using a drag-and-drop content builder plugin."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:86
+msgid "Speed up your site"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:87
+msgid "If you find yourself in the situation where everything on your site is running very slow, you might consider having a look at the below documentation where you will find the most common issues causing this and possible solutions for each of the issues."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:92
+#, fuzzy
+msgid "Link Menu to sections"
+msgstr "Скрыть Секцию Логотипы?"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:93
+msgid "Linking the frontpage sections with the top menu is very simple, all you need to do is assign section anchors to the menu. In the below documentation you will find a nice tutorial about this."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:98
+msgid "Change anchors"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:99
+msgid "To better suit your site's needs, you can change each section's anchor to what you want. The entire process is described below."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:104
+#, fuzzy
+msgid "Slider in big title section"
+msgstr "Скрыть Секцию Контакты?"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:105
+msgid "If you are in the position where you want to change the default appearance of the big title section, you may want to replace it with a nice looking slider. This can be accomplished by following the documention below."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:116
+#, fuzzy
+msgid "View full documentation"
+msgstr "Документация"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:117
+msgid "Need more details? Please check our full documentation for detailed information on how to use Parallax One."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:118
+#, fuzzy
+msgid "Read full documentation"
+msgstr "Документация"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:125
+#, fuzzy
+msgid "Recommended plugins"
+msgstr "Рекомендуемый"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:131
+msgid "Intergeo Maps - Google Maps Plugin"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:132
+msgid "The Intergeo Google Maps plugin is a simple, easy and in the same time quite powerful tool for handling Google Maps in your website. The plugin allows users to create new maps by using powerful UI builder."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:136
+#: inc/admin/welcome-screen/sections/getting-started.php:157
+#: inc/admin/welcome-screen/sections/getting-started.php:180
+#: inc/admin/welcome-screen/sections/getting-started.php:205
+#: inc/admin/welcome-screen/sections/getting-started.php:226
+#: inc/admin/welcome-screen/sections/getting-started.php:248
+#, fuzzy
+msgid "Already activated"
+msgstr "Активировать"
+
+#: inc/admin/welcome-screen/sections/getting-started.php:142
+msgid "Install Intergeo Maps"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:153
+msgid "Adblock Notify by b*web"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:163
+msgid "Install Adblock Notify"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:175
+msgid "Page Builder by SiteOrigin"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:176
+msgid "Build responsive page layouts using the widgets you know and love using this simple drag and drop page builder."
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:186
+msgid "Install Page Builder by SiteOrigin"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:200
+msgid "Pirate Forms"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:222
+msgid "FEEDZY RSS Feeds"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:232
+msgid "Install FEEDZY RSS Feeds"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:243
+msgid "Easy Content Types"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:244
+msgid "Custom Post Types, Taxonomies and Metaboxes in Minutes"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/getting-started.php:254
+msgid "Download Easy Content Types"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/github.php:9
+msgid "Can I Contribute?"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/github.php:11
+msgid "Found a bug?"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/github.php:12
+msgid "Want to contribute with a fix or create a new feature?"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/github.php:13
+msgid "GitHub is the place to go!"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/github.php:16
+#, fuzzy
+msgid "Parallax One on GitHub"
+msgstr "Parallax One"
+
+#: inc/admin/welcome-screen/sections/github.php:21
+msgid "Do you have some suggestions for us?"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/github.php:22
+msgid "Your opinion matter!"
+msgstr ""
+
+#: inc/admin/welcome-screen/sections/github.php:25
+msgid "Tell us your thoughts"
+msgstr ""
+
+#: inc/class/parallax-one-general-control.php:93
+#: inc/class/parallax-one-general-control.php:211
+#: inc/class/parallax-one-general-control.php:359
+msgid "Parallax One"
+msgstr "Parallax One"
+
+#: inc/class/parallax-one-general-control.php:98
+#: inc/class/parallax-one-general-control.php:216
+#: inc/class/parallax-one-general-control.php:363
+#, fuzzy
+msgid "Image type"
+msgstr "Тип изображения:"
+
+#: inc/class/parallax-one-general-control.php:100
+#: inc/class/parallax-one-general-control.php:110
+#: inc/class/parallax-one-general-control.php:132
+#: inc/class/parallax-one-general-control.php:218
+#: inc/class/parallax-one-general-control.php:228
+#: inc/class/parallax-one-general-control.php:252
+#: inc/class/parallax-one-general-control.php:365
+#: inc/class/parallax-one-general-control.php:375
+#: inc/class/parallax-one-general-control.php:398
+msgid "Icon"
+msgstr "Значок"
+
+#: inc/class/parallax-one-general-control.php:102
+#: inc/class/parallax-one-general-control.php:220
+#: inc/class/parallax-one-general-control.php:367
+msgid "None"
+msgstr ""
+
+#: inc/class/parallax-one-general-control.php:107
+#: inc/class/parallax-one-general-control.php:126
+#: inc/class/parallax-one-general-control.php:225
+#: inc/class/parallax-one-general-control.php:246
+#: inc/class/parallax-one-general-control.php:372
+#: inc/class/parallax-one-general-control.php:392
+msgid "Upload Image"
+msgstr "Загрузить изображение"
+
+#: inc/class/parallax-one-general-control.php:148
+#: inc/class/parallax-one-general-control.php:149
+#: inc/class/parallax-one-general-control.php:267
+#: inc/class/parallax-one-general-control.php:268
+#: inc/class/parallax-one-general-control.php:412
+#: inc/class/parallax-one-general-control.php:413
+#, fuzzy
+msgid "Title"
+msgstr "Подзаголовок"
+
+#: inc/class/parallax-one-general-control.php:160
+#: inc/class/parallax-one-general-control.php:162
+#: inc/class/parallax-one-general-control.php:279
+#: inc/class/parallax-one-general-control.php:281
+#: inc/class/parallax-one-general-control.php:424
+#: inc/class/parallax-one-general-control.php:426
+msgid "Text"
+msgstr "Текст"
+
+#: inc/class/parallax-one-general-control.php:161
+#: inc/class/parallax-one-general-control.php:280
+#: inc/class/parallax-one-general-control.php:425
+msgid "Allowed html: br, em, strong, a, button, ul, li"
+msgstr ""
+
+#: inc/class/parallax-one-general-control.php:167
+#: inc/class/parallax-one-general-control.php:168
+#: inc/class/parallax-one-general-control.php:191
+#: inc/class/parallax-one-general-control.php:286
+#: inc/class/parallax-one-general-control.php:287
+#: inc/class/parallax-one-general-control.php:316
+#: inc/class/parallax-one-general-control.php:337
+#: inc/class/parallax-one-general-control.php:431
+#: inc/class/parallax-one-general-control.php:432
+#: inc/class/parallax-one-general-control.php:461
+#: inc/class/parallax-one-general-control.php:481
+msgid "Link"
+msgstr "Ссылка"
+
+#: inc/class/parallax-one-general-control.php:173
+#: inc/class/parallax-one-general-control.php:174
+#: inc/class/parallax-one-general-control.php:292
+#: inc/class/parallax-one-general-control.php:293
+#: inc/class/parallax-one-general-control.php:437
+#: inc/class/parallax-one-general-control.php:438
+#, fuzzy
+msgid "Shortcode"
+msgstr "Shortcode карты"
+
+#: inc/class/parallax-one-general-control.php:179
+#: inc/class/parallax-one-general-control.php:298
+#: inc/class/parallax-one-general-control.php:443
+#, fuzzy
+msgid "Social icons"
+msgstr "Значок соцсети"
+
+#: inc/class/parallax-one-general-control.php:193
+#: inc/class/parallax-one-general-control.php:319
+#: inc/class/parallax-one-general-control.php:339
+#: inc/class/parallax-one-general-control.php:463
+#: inc/class/parallax-one-general-control.php:483
+msgid "X"
+msgstr ""
+
+#: inc/class/parallax-one-general-control.php:197
+#: inc/class/parallax-one-general-control.php:325
+#: inc/class/parallax-one-general-control.php:343
+#: inc/class/parallax-one-general-control.php:469
+#: inc/class/parallax-one-general-control.php:487
+msgid "Add icon"
+msgstr ""
+
+#: inc/class/parallax-one-general-control.php:202
+#: inc/class/parallax-one-general-control.php:349
+#: inc/class/parallax-one-general-control.php:493
+msgid "Delete field"
+msgstr "Удалить поле"
+
+#: inc/class/parallax-one-general-control.php:510
+msgid "Add new field"
+msgstr "Добавить новое поле"
+
+#: sections/parallax_one_contact_info_section.php:14
+#, fuzzy
+msgid "Contact Info"
+msgstr "Секция Контакты"
+
+#: sections/parallax_one_happy_customers_section.php:19
+#: sections/parallax_one_happy_customers_section.php:153
+#, fuzzy
+msgid "Testimonials"
+msgstr "Секция Рекомендации"
+
+#: sections/parallax_one_header_section.php:85
+#: sections/parallax_one_header_section.php:88
+#: sections/parallax_one_header_section.php:90
+#, fuzzy
+msgid "Header button label:"
+msgstr "Метка на кнопке"
+
+#: sections/parallax_one_latest_news_section.php:20
+msgid "Latest blog posts"
+msgstr ""
+
+#: sections/parallax_one_latest_news_section.php:62
+#, fuzzy, php-format
+msgid "Latest News: %s"
+msgstr "Последние новости"
+
+#: sections/parallax_one_latest_news_section.php:90
+msgid "by"
+msgstr "от"
+
+#: sections/parallax_one_latest_news_section.php:100
+#, fuzzy, php-format
+msgid "Read more %s"
+msgstr "Читать далее"
+
+#: sections/parallax_one_logos_section.php:17
+msgid " Affiliates Logos"
+msgstr ""
+
+#: sections/parallax_one_our_services_section.php:18
+#: sections/parallax_one_our_services_section.php:155
+#, fuzzy
+msgid "Services"
+msgstr "Наши Сервисы"
+
+#: sections/parallax_one_our_story_section.php:12
+#: sections/parallax_one_our_story_section.php:23
+#: sections/parallax_one_our_story_section.php:60
+msgid "About"
+msgstr ""
+
+#: sections/parallax_one_our_team_section.php:16
+#: sections/parallax_one_our_team_section.php:163
+#, fuzzy
+msgid "Team"
+msgstr "Наша Команда"
+
+#: sections/parallax_one_our_team_section.php:88
+msgid "Avatar"
+msgstr ""
+
+#: sections/parallax_one_ribbon_section.php:15
+#: sections/parallax_one_ribbon_section.php:18
+#: sections/parallax_one_ribbon_section.php:61
+#: sections/parallax_one_ribbon_section.php:64
+#, fuzzy
+msgid "Ribbon"
+msgstr "Секция Лента"
+
+#: sections/parallax_one_ribbon_section.php:39
+#: sections/parallax_one_ribbon_section.php:41
+#, fuzzy
+msgid "Ribbon button label:"
+msgstr "Метка на кнопке"
+
+#~ msgid "Something went wrong."
+#~ msgstr "Что-то пошло не так."
+
+#~ msgid "Private Repository"
+#~ msgstr "Частный Репозиторий"
+
+#~ msgid "Install package not available."
+#~ msgstr "Установка пакета недоступна."
+
+#~ msgid ""
+#~ "Downloading install package from <span class=\"code\">%s</span>&#8230;"
+#~ msgstr ""
+#~ "Загрузка установочного пакета из <span class=\"code\">%s</span>&hellip;"
+
+#~ msgid "Unpacking the package&#8230;"
+#~ msgstr "Извлечение пакета из архива&hellip;"
+
+#~ msgid "Installing the plugin&#8230;"
+#~ msgstr "Установка плагина&hellip;"
+
+#~ msgid "Plugin install failed."
+#~ msgstr "Не удалось установить плагин."
+
+#~ msgid "Plugin installed successfully."
+#~ msgstr "Плагин успешно установлен."
+
+#~ msgid "* Please enter your name."
+#~ msgstr "* Пожалуйста, введите ваше имя."
+
+#~ msgid "* Please enter your email address."
+#~ msgstr "* Пожалуйста, введите ваш email."
+
+#~ msgid "* You entered an invalid email address."
+#~ msgstr "* Вы указали некорректный email-адрес."
+
+#~ msgid "* Please enter a subject."
+#~ msgstr "* Пожалуйста, введите тему сообщения."
+
+#~ msgid "* Please enter a message."
+#~ msgstr "* Пожалуйста, введите сообщение."
+
+#~ msgid "Thanks, your email was sent successfully!"
+#~ msgstr "Спасибо, ваше электронное письмо отправлено!"
+
+#~ msgid "Sorry, an error occured."
+#~ msgstr "Извините, произошла ошибка."

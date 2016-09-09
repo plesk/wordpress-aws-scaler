@@ -47,9 +47,12 @@ fi
 if ! $(wp core is-installed --allow-root); then
 	if [ -f /data.sql ]; then
 		echo >&2 "Restoring database"
+
 		wp db import /data.sql --allow-root
 		wp core update-db --allow-root
-	elif ! $(wp core is-installed --allow-root); then
+	fi
+
+	if ! $(wp core is-installed --allow-root); then
 		echo >&2 "Installing WordPress in $(pwd)"
 		wp core install --url="$WORDPRESS_URL" --title="$WORDPRESS_TITLE" --admin_user="$WORDPRESS_USER_NAME" --admin_password="$WORDPRESS_USER_PASSWORD" --admin_email="$WORDPRESS_USER_EMAIL" --allow-root
 	fi
@@ -69,7 +72,8 @@ if [ "$S3_ENABLED" ]; then
 	wp s3-uploads migrate-attachments --delete-local --allow-root
 fi
 
-if [ -f /data.sql ]; then
+if [ -f /custom.sh ]; then
+	export WORDPRESS_URL
 	/custom.sh
 fi
 

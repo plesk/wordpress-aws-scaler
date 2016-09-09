@@ -1,0 +1,27 @@
+<wpml-config>
+	<admin-texts>
+		<key name="theme_mods_Parallax-One">
+			<key name="paralax_one_header_logo" />
+			<key name="paralax_one_logo" />
+			<key name="parallax_one_header_title" />
+			<key name="parallax_one_header_subtitle" />
+			<key name="parallax_one_header_button_text" />
+			<key name="parallax_one_header_button_link" />
+			<key name="parallax_one_our_services_title" />
+			<key name="parallax_one_our_services_subtitle" />
+			<key name="parallax_one_our_story_title" />
+			<key name="parallax_one_our_story_text" />
+			<key name="parallax_one_our_team_title" />
+			<key name="parallax_one_our_team_subtitle" />
+			<key name="parallax_one_happy_customers_title" />
+			<key name="parallax_one_happy_customers_subtitle" />
+			<key name="parallax_one_ribbon_title" />
+			<key name="parallax_one_button_text" />
+			<key name="parallax_one_button_link" />
+			<key name="parallax_one_latest_news_title" />
+			<key name="parallax_one_contact_form_shortcode" />
+			<key name="parallax_one_contact_map_shortcode" />
+			<key name="parallax_one_copyright" />
+		</key>
+	</admin-texts>
+</wpml-config>
