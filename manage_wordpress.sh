@@ -21,8 +21,30 @@ function parse_json
     if [[ $2 =~ $regex ]]; then
         echo ${BASH_REMATCH[1]}
     else
-        echo 
+        echo ''
     fi
+}
+
+# Function to get a specific value within a specified block, by using a key / pair search
+# Parameters: 1 Key to find / 2 Value to match / 3 Key within same block / 4 Content string
+function block_search
+{
+	regex="(\{[^{]*\"${1}\":[[:space:]]?\"?${2}\"?[^}]*\})"
+
+	if [[ $4 =~ $regex ]]
+	then
+		block_data=${BASH_REMATCH[1]}
+		regex_block="\"${3}\":[[:space:]]?\"?([^,}\"]*)\"?(,|[[:space:]]*\})"
+
+		if [[ $block_data =~ $regex_block ]]
+		then
+			echo ${BASH_REMATCH[1]}
+		else
+			echo ''
+		fi
+	else
+		echo ''
+	fi
 }
 
 # Set values from configuration file
