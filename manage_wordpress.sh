@@ -90,9 +90,12 @@ DB_ENGINE=$(get_config DB_ENGINE "mariadb")
 # Other settings
 LOG_FILE="manage_wordpress.log"
 
+# Command line parameters
+ACTION=$1
+PARAM=$2
+
 # Create a new WordPress in your AWS account via AWS CLI.
-if [[ $1 == "create" ]]; then
-    rm $LOG_FILE
+if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     
     echo "[1/5] Check VPC..."
@@ -121,8 +124,8 @@ if [[ $1 == "create" ]]; then
         OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
         echo "$OUTPUT" >> "$LOG_FILE"
         SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")    
-        echo "   Security Group Id: $SEC_GROUP_ID"        
     fi
+    echo "   Security Group Id: $SEC_GROUP_ID"        
        
     echo "[3/5] Check RDS Database..."
     # TODO check for existing RDS instances and re-use it!
@@ -162,20 +165,19 @@ if [[ $1 == "create" ]]; then
         OUTPUT2=$(aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$TAG)
     done 
 
-    INSTANCE_NAME=$(echo $OUTPUT | sed 's/RESERVATION.*INSTANCE //' | sed 's/ .*//')
-
     times=0
     echo
-    while [ 5 -gt $times ] && ! aws ec2 describe-instances $INSTANCE_NAME | grep -q "running"
+    while [ 5 -gt $times ] && [[ -z $(aws ec2 describe-instances --instance-id $INSTANCE_ID | grep "running") ]]
     do
         times=$(( $times + 1 ))
-        echo Attempt $times at verifying $INSTANCE_NAME is running...
+        echo Attempt $times at verifying $INSTANCE_ID is running...
+        sleep 5s
     done
 
     echo
 
     if [ 5 -eq $times ]; then
-        echo Instance $INSTANCE_NAME is not running. Exiting...
+        echo Instance $INSTANCE_ID is not running. Exiting...
         exit    
     fi
 
@@ -184,13 +186,17 @@ if [[ $1 == "create" ]]; then
     echo 
 
 # Delete the WordPress incl. database etc BE CAREFUL - this deletes all that the script created before.
-elif [[ $1 == "delete" ]]; then
-    echo -e "Please enter \"OK\" to delete all existing WordPress instances: \c "
-    read  ok
-    if [ $ok = "OK" ]; then
+elif [[ $ACTION == "delete" ]]; then
+    if ! [[ $PARAM == "OK" ]]; then
+        echo -e "Please enter \"OK\" to delete all existing WordPress instances: \c "
+        read  PARAM
+    fi
+    
+    if [ $PARAM = "OK" ]; then
 
+        echo "----- DELETE WORDPRESS -----" >> "$LOG_FILE"
+        
         echo "[1/2] Searching EC2 instances..."
-
         OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
  
         block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
