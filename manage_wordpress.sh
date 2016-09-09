@@ -112,10 +112,9 @@ if [[ $1 == "create" ]]; then
     echo "   VPC ID: $VPC_ID"
 
     echo "[2/5] Check Security Group..."
-    # TODO check for existing Security Group and re-use it!
     OUTPUT=$(aws ec2 describe-security-groups)
 
-    SEC_GROUP_ID=$(block_search "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT")
+    SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
     if [[ -z $VPC_ID ]]; then
         echo "Creating Security Group..."
         # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
@@ -160,8 +159,6 @@ if [[ $1 == "create" ]]; then
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
-	
-	    # add tags to instance
         OUTPUT2=$(aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$TAG)
     done 
 
@@ -203,23 +200,17 @@ elif [[ $1 == "delete" ]]; then
 	        aws ec2 terminate-instances --instance-ids $INSTANCE_ID
 	    done 
 
-
         echo "[2/2] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
 
-        block_search_array "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME"
-        for SEC_GROUP_ID in "${search_array[@]}"
-        do
-	        echo "Security Group: $SEC_GROUP_ID"
-	
-	        # TODO can only be one security group        
-        done 
+        SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
+        if [[ -n $SEC_GROUP_ID ]]; then
+            echo "Deleting Security Group $SEC_GROUP_ID..."
+            OUTPUT=$(aws ec2 delete-security-group --group-id $SEC_GROUP_ID)
+            echo "$OUTPUT" >> "$LOG_FILE"
+        fi 
 
-        echo "[3/5] Deleting Security Group $SEC_GROUP_ID..."
-        OUTPUT=$(aws ec2 delete-security-group --group-id $SEC_GROUP_ID)
-        echo "$OUTPUT" >> "$LOG_FILE"
-
-        echo "[4/5] Deleting S3 bucket..."
+        echo "[3/5] Deleting S3 bucket..."
         aws s3api delete-bucket --bucket wordpress-scaler
 
         echo 
@@ -262,18 +253,16 @@ elif [[ $1 == "list" ]]; then
     # "VpcId": "vpc-xxxxxxxx"
     # or returns "InvalidGroup.NotFound" if no security group found
 
-    block_search_array "$OUTPUT" "VpcId" "GroupName" "$SEC_GROUP_NAME"
-    for VPC_ID in "${search_array[@]}"
-    do
+    VPC_ID=$(block_search "$OUTPUT" "VpcId" "GroupName" "$SEC_GROUP_NAME")
+    if [[ -n $VPC_ID ]]; then
 	    echo "   VPC ID: $VPC_ID"
-    done   
-    
-    block_search_array "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME"
-    for SEC_GROUP_ID in "${search_array[@]}"
-    do
+    fi
+
+    SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
+    if [[ -n $SEC_GROUP_ID ]]; then
 	    echo "   Security Group: $SEC_GROUP_ID"
-    done   
-    
+    fi
+     
     echo
     echo "Searching RDS instances..."
     
