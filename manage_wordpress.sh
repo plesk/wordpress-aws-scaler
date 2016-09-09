@@ -66,7 +66,9 @@ function block_search_array
 # Set values from configuration file
 SEC_GROUP_NAME=$(get_config SEC_GROUP_NAME)
 SEC_GROUP_DESC=$(get_config SEC_GROUP_DESC)
+TAG=$(get_config TAG)
 AMI=$(get_config AMI)
+DEVICE_NAME=$(get_config DEVICE_NAME)
 INSTANCE_TYPE=$(get_config INSTANCE_TYPE)
 REGION=$(get_config REGION)
 VPC_IP_BLOCK=$(get_config VPC_IP_BLOCK)
@@ -92,34 +94,30 @@ if [[ $1 == "create" ]]; then
         echo "$OUTPUT" >> "$LOG_FILE"
         VPC_ID=$(parse_json VpcId "$OUTPUT")
     fi    
-    echo "VPC ID: $VPC_ID"
+    echo "   VPC ID: $VPC_ID"
 
     echo "[2/5] Creating Security Group..."
     # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
     OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
     echo "$OUTPUT" >> "$LOG_FILE"
     SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")    
-    echo "Security Group Id: $SEC_GROUP_ID"
+    echo "   Security Group Id: $SEC_GROUP_ID"
         
     echo "[3/5] Creating EC2 instances..."        
-    OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --cli-input-json file://ec2-config-simple.json)
+    OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":false}}]" --cli-input-json file://ec2-config-simple.json)
     # --count 2
     # --subnet-id subnet-xxxxxxxx
-    # --block-device-mappings "[{\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":false}}]"
+    # --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":false}}]"
     # "InstanceId": "i-xxxxxxxx"
-    # aws ec2 create-tags --resources i-xxxxxxxx --tags Key=Name,Value=WordPressScaler
-    # aws ec2 describe-instances --filters "Name=tag-value,Values=WordPressScaler"
-    
     echo "$OUTPUT" >> "$LOG_FILE"
-    echo "$OUTPUT"  
 
     block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
     for INSTANCE_ID in "${search_array[@]}"
     do
-	    echo "EC2 Instance Id: $INSTANCE_ID"
+	    echo "Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
 	
 	    # add tags to instance
-        OUTPUT2=$(aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=WordPressScaler)
+        OUTPUT2=$(aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$TAG)
     done 
 
     INSTANCE_NAME=$(echo $OUTPUT | sed 's/RESERVATION.*INSTANCE //' | sed 's/ .*//')
@@ -149,22 +147,9 @@ elif [[ $1 == "delete" ]]; then
     read  ok
     if [ $ok = "OK" ]; then
 
-        echo "[1/5] Searching Security Groups..."
-        OUTPUT=$(aws ec2 describe-security-groups)
-        echo "$OUTPUT" >> "$LOG_FILE"
+        echo "[1/2] Searching EC2 instances..."
 
-        block_search_array "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT"
-        for SEC_GROUP_ID in "${search_array[@]}"
-        do
-	        echo "Security Group: $SEC_GROUP_ID"
-	
-	        # TODO	        
-        done 
-        
-        echo "[2/5] Searching EC2 instances..."
-
-        # search tagged instances
-        OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=WordPressScaler")
+        OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
         echo "$OUTPUT" >> "$LOG_FILE"
  
         block_search_array "ImageId" "$AMI" "InstanceId" "$OUTPUT"
@@ -174,17 +159,18 @@ elif [[ $1 == "delete" ]]; then
 	        aws ec2 terminate-instances --instance-ids $INSTANCE_ID
 	    done 
 
-        # search all that were not tagged
-        OUTPUT=$(aws ec2 describe-instances)
+        echo "[2/2] Searching Security Group..."
+        OUTPUT=$(aws ec2 describe-security-groups)
         echo "$OUTPUT" >> "$LOG_FILE"
 
-               #     "SecurityGroups": [
-               #         {
-                #            "GroupName": "WordPress-Docker-Test",
-                 #           "GroupId": "sg-1b8dde7c"
-                  #      }
+        block_search_array "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT"
+        for SEC_GROUP_ID in "${search_array[@]}"
+        do
+	        echo "Security Group: $SEC_GROUP_ID"
+	
+	        # TODO can only be one security group        
+        done 
 
-        
         echo "[3/5] Deleting Security Group $SEC_GROUP_ID..."
         OUTPUT=$(aws ec2 delete-security-group --group-id $SEC_GROUP_ID)
         echo "$OUTPUT" >> "$LOG_FILE"
@@ -223,13 +209,13 @@ elif [[ $1 == "list" ]]; then
     block_search_array "GroupName" "$SEC_GROUP_NAME" "VpcId" "$OUTPUT"
     for VPC_ID in "${search_array[@]}"
     do
-	    echo "VPC ID: $VPC_ID"
+	    echo "   VPC ID: $VPC_ID"
     done   
     
     block_search_array "GroupName" "$SEC_GROUP_NAME" "GroupId" "$OUTPUT"
     for SEC_GROUP_ID in "${search_array[@]}"
     do
-	    echo "Security Group: $SEC_GROUP_ID"
+	    echo "   Security Group: $SEC_GROUP_ID"
     done   
     
 # Display introduction and how to contribute.    
