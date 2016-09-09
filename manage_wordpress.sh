@@ -197,7 +197,8 @@ elif [[ $1 == "delete" ]]; then
         for INSTANCE_ID in "${search_array[@]}"
         do
 	        echo "Deleting EC2 Instance $INSTANCE_ID..."
-	        aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+	        OUTPUT=$(aws ec2 terminate-instances --instance-ids $INSTANCE_ID)
+            echo "$OUTPUT" >> "$LOG_FILE"
 	    done 
 
         echo "[2/2] Searching Security Group..."
