@@ -88,7 +88,6 @@ tbd
     $ aws s3
     $ aws route53
     $ aws events
-    $ aws 
     
 # All commands of AWS EC2 CLI
 
