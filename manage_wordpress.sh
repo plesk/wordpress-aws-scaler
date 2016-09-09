@@ -219,6 +219,9 @@ elif [[ $1 == "delete" ]]; then
         OUTPUT=$(aws ec2 delete-security-group --group-id $SEC_GROUP_ID)
         echo "$OUTPUT" >> "$LOG_FILE"
 
+        echo "[4/5] Deleting S3 bucket..."
+        aws s3api delete-bucket --bucket wordpress-scaler
+
         echo 
         echo "WordPress and all depending data deleted."           
         echo
