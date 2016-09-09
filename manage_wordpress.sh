@@ -86,6 +86,7 @@ DB_NAME=$(get_config DB_NAME "WordPressScalerDB")
 DB_PASSWORD=$(get_config DB_PASSWORD)
 DB_USERNAME=$(get_config DB_USERNAME "WordPressScalerDBUser")
 DB_ENGINE=$(get_config DB_ENGINE "mariadb")
+ELB_NAME=$(get_config ELB_NAME "WordPressScaler")
 
 # Other settings
 LOG_FILE="manage_wordpress.log"
@@ -145,7 +146,11 @@ if [[ $ACTION == "create" ]]; then
     echo "$OUTPUT3" >> "$LOG_FILE"
     echo "$OUTPUT3"
 
-    # TODO Check and create ELB                     
+    # TODO Check and create ELB
+    echo "Creating ELB"
+    OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
+    aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
+
     # TODO Check and create AutoScalingGroups 
     # TODO Check and create CloudFront         
     # TODO Check and create Alarms                                 
