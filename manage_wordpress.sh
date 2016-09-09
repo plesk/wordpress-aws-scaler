@@ -249,12 +249,15 @@ elif [[ $1 == "list" ]]; then
     echo "   VPC IP Block:               $VPC_IP_BLOCK "
     echo "   Tag:                        $TAG "
     echo
+    echo "Elastic Loadbalancer"
+    echo "   ELB Name:                   $ELB_NAME"
+    echo
     echo "RDS Database"
-    echo "   DB Engine:                  $DB_ENGINE "
-    echo "   DB Instance Type:           $DB_INSTANCE_TYPE "
-    echo "   DB Name:                    $DB_NAME "
-    echo "   DB User:                    $DB_USERNAME "
-    echo "   DB Password:                $DB_PASSWORD "
+    echo "   DB Engine:                  $DB_ENGINE"
+    echo "   DB Instance Type:           $DB_INSTANCE_TYPE"
+    echo "   DB Name:                    $DB_NAME"
+    echo "   DB User:                    $DB_USERNAME"
+    echo "   DB Password:                $DB_PASSWORD"
     echo
 
     echo "Searching Security Groups..."
