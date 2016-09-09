@@ -11,6 +11,7 @@ function get_config
 			if [[ $b =~ $regex ]]
 			then
 				echo ${BASH_REMATCH[1]}
+				break
 			fi
         else
             if [[ -n $2 ]]
