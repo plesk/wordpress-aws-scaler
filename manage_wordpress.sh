@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Function to load values from the configuration file
+# Parameters: 1 Name of the Key / 2 Default value (optional)
 function get_config
 {
 	while read -r a b; do
@@ -10,6 +12,12 @@ function get_config
 			then
 				echo ${BASH_REMATCH[1]}
 			fi
+        else
+            if [[ -n $2 ]]
+            then
+                echo $2
+                break
+            fi
 		fi
 	done < manage_wordpress.ini
 }
