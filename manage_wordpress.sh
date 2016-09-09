@@ -137,6 +137,12 @@ if [[ $1 == "create" ]]; then
         exit    
     fi
 
+    echo "[4/5] Creating S3 container..."
+    OUTPUT3=$(aws s3api create-bucket --bucket wordpress-scaler --region $REGION --create-bucket-configuration LocationConstraint=$REGION --output text)
+    aws s3api put-bucket-tagging --bucket wordpress-scaler --tagging TagSet="[{Key=Name,Value=$TAG}]"
+    echo "$OUTPUT3" >> "$LOG_FILE"
+    echo "$OUTPUT3"
+
     echo 
     echo "WordPress instances up and running."   
     echo 
