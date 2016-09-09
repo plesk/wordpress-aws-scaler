@@ -72,6 +72,13 @@ DEVICE_NAME=$(get_config DEVICE_NAME)
 INSTANCE_TYPE=$(get_config INSTANCE_TYPE)
 REGION=$(get_config REGION)
 VPC_IP_BLOCK=$(get_config VPC_IP_BLOCK)
+DB_INSTANCE_TYPE=$(get_config DB_INSTANCE_TYPE)
+DB_NAME=$(get_config DB_NAME)
+DB_PASSWORD=$(get_config DB_PASSWORD)
+DB_USERNAME=$(get_config DB_USERNAME)
+DB_ENGINE=$(get_config DB_ENGINE)
+
+# Other settings
 LOG_FILE="manage_wordpress.log"
 
 # Create a new WordPress in your AWS account via AWS CLI.
@@ -96,13 +103,21 @@ if [[ $1 == "create" ]]; then
     fi    
     echo "   VPC ID: $VPC_ID"
 
+    # TODO check for existing Security Group and re-use it!
+
     echo "[2/5] Creating Security Group..."
     # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
     OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
     echo "$OUTPUT" >> "$LOG_FILE"
     SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")    
     echo "   Security Group Id: $SEC_GROUP_ID"
-        
+       
+    # TODO check for existing RDS instances and re-use it!
+    
+    # TODO if RDS does not exist, create it
+    OUTPUT=$(aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5)
+    echo "$OUTPUT" >> "$LOG_FILE"
+               
     echo "[3/5] Creating EC2 instances..."        
     OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":false}}]" --cli-input-json file://ec2-config-simple.json)
     # --count 2
@@ -164,6 +179,7 @@ elif [[ $1 == "delete" ]]; then
 	        echo "Deleting EC2 Instance $INSTANCE_ID..."
 	        aws ec2 terminate-instances --instance-ids $INSTANCE_ID
 	    done 
+
 
         echo "[2/2] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
