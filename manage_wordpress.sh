@@ -109,7 +109,9 @@ if [[ $ACTION == "create" ]]; then
     if [[ -z $VPC_ID ]]; then
         echo "   Creating VPC..."
         # sample OUTPUT: { "Vpc": { "VpcId": "vpc-xxxxxxxx", "InstanceTenancy": "default", "State": "pending", "DhcpOptionsId": "dopt-xxxxxxxx", "CidrBlock": "172.31.0.0/16", "IsDefault": false } }    
-        OUTPUT=$(aws ec2 create-vpc --cidr-block $VPC_IP_BLOCK)
+        CMD="aws ec2 create-vpc --cidr-block $VPC_IP_BLOCK"
+    	echo "$CMD" >> "$LOG_FILE"
+    	OUTPUT=$($CMD)
         echo "$OUTPUT" >> "$LOG_FILE"
         VPC_ID=$(parse_json VpcId "$OUTPUT")
     fi    
@@ -122,8 +124,10 @@ if [[ $ACTION == "create" ]]; then
     if [[ -z $SEC_GROUP_ID ]]; then
         echo "   Creating Security Group..."
         # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
+        CMD="aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description \"$SEC_GROUP_DESC\" --vpc-id $VPC_ID"
+    	echo "$CMD" >> "$LOG_FILE"
         OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
-        echo "$OUTPUT" >> "$LOG_FILE"
+    	echo "$OUTPUT" >> "$LOG_FILE"
         SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")    
     fi
     echo "   Security Group Id: $SEC_GROUP_ID"        
@@ -134,7 +138,14 @@ if [[ $ACTION == "create" ]]; then
     DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
     if [[ -z $DB ]]; then
         echo "   Creating RDS Database..."
-    	OUTPUT=$(aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5)
+        CMD="aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --db-name $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5 --vpc-security-group-ids $SEC_GROUP_ID --tags Key=Name,Value=$TAG"
+    	echo "$CMD" >> "$LOG_FILE"
+        OUTPUT=$(aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --db-name $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5 --vpc-security-group-ids $SEC_GROUP_ID --tags "Key=Name,Value=$TAG")
+        # --db-security-groups <value>
+        # --vpc-security-group-ids <value>
+        # --license-model general-public-license
+        # [--publicly-accessible | --no-publicly-accessible]
+        # [--storage-type <value>]
     	echo "$OUTPUT" >> "$LOG_FILE"
         DB=$(parse_json "DBInstanceIdentifier" "$OUTPUT")    
     fi
@@ -146,10 +157,12 @@ if [[ $ACTION == "create" ]]; then
     S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
     if [[ -z $S3_BUCKET ]]; then
         echo "   Creating S3 Bucket..."
-        OUTPUT=$(aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION --output text)
-        echo "$OUTPUT" >> "$LOG_FILE"
-        aws s3api put-bucket-tagging --bucket $S3_BUCKET_NAME --tagging TagSet="[{Key=Name,Value=$TAG}]"
+        CMD="aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION --output text"
+    	echo "$CMD" >> "$LOG_FILE"
+    	OUTPUT=$($CMD)
+    	echo "$OUTPUT" >> "$LOG_FILE"
         S3_BUCKET=$(parse_json "Name" "$OUTPUT")    
+        aws s3api put-bucket-tagging --bucket $S3_BUCKET_NAME --tagging TagSet="[{Key=Name,Value=$TAG}]"
     fi
     echo "   S3 Storage: $S3_BUCKET"        
         
@@ -160,10 +173,12 @@ if [[ $ACTION == "create" ]]; then
     ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
     if [[ -z $ELB ]]; then    
     	echo "   Creating ELB"
+   	 	CMD="aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners \"Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80\" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c"
+      	echo "$CMD" >> "$LOG_FILE"
    	 	OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
-        echo "$OUTPUT" >> "$LOG_FILE"
-    	aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
+    	echo "$OUTPUT" >> "$LOG_FILE"
         ELB=$(parse_json "DNSName" "$OUTPUT")    
+    	aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
     fi
     echo "   Elastic Loadbalancer: $ELB"        
 
@@ -172,6 +187,8 @@ if [[ $ACTION == "create" ]]; then
     # TODO Check and create Alarms                                 
                
     echo "[5/6] Creating EC2 instances..."        
+    CMD="aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --cli-input-json file://ec2-config.json"
+  	echo "$CMD" >> "$LOG_FILE"
     OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --cli-input-json file://ec2-config.json)
     # --count 2
     # --subnet-id subnet-xxxxxxxx
@@ -217,7 +234,7 @@ elif [[ $ACTION == "delete" ]]; then
 
         echo "----- DELETE WORDPRESS -----" >> "$LOG_FILE"
         
-        echo "[1/5] Searching EC2 instances..."
+        echo "[1/6] Searching EC2 instances..."
         OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
  
  		i=0
@@ -225,56 +242,66 @@ elif [[ $ACTION == "delete" ]]; then
         for INSTANCE_ID in "${search_array[@]}"
         do
 	        echo "   Deleting EC2 Instance $INSTANCE_ID..."
-	        OUTPUT=$(aws ec2 terminate-instances --instance-ids $INSTANCE_ID)
+	        CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
             i=$((i+1))
 	    done 
  		echo "   $i EC2 Instances deleted"  
 
-        echo "[2/5] Searching RDS Database..."
+        echo "[2/6] Searching RDS Database..."
         OUTPUT=$(aws rds describe-db-instances)
 
         DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
         if [[ -n $DB ]]; then
             echo "   Deleting RDS Database $DB..."
-            OUTPUT=$(aws rds delete-db-instance --db-instance-identifier $DB --skip-final-snapshot)
+            CMD="aws rds delete-db-instance --db-instance-identifier $DB --skip-final-snapshot"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
         else
             echo "   No RDS Database found"        
         fi
 
-        echo "[3/5] Searching S3 Bucket..."
+        echo "[3/6] Searching S3 Bucket..."
         OUTPUT=$(aws s3api list-buckets)
 
         S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
         if [[ -n $S3_BUCKET ]]; then
             echo "   Deleting S3 Bucket $S3_BUCKET..."
-            OUTPUT=$(aws s3api delete-bucket --bucket $S3_BUCKET)
+            CMD="aws s3api delete-bucket --bucket $S3_BUCKET"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
         else
             echo "   No S3 Bucket found"        
         fi
 
 
-        echo "[5/5] Searching Elastic Loadbalancer..."
+        echo "[5/6] Searching Elastic Loadbalancer..."
     	OUTPUT=$(aws elb describe-load-balancers)
 
     	ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
     	if [[ -n $ELB ]]; then    
 		    echo "   Deleting Elastic Loadbalancer $ELB..."     
-            OUTPUT=$(aws elb delete-load-balancer --load-balancer-name $ELB)
+            CMD="aws elb delete-load-balancer --load-balancer-name $ELB"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
 		else
             echo "   No Elastic Loadbalancer found"        
 		fi
 
-        echo "[5/5] Searching Security Group..."
+        echo "[5/6] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
 
         SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
         if [[ -n $SEC_GROUP_ID ]]; then
             echo "   Deleting Security Group $SEC_GROUP_ID..."
-            OUTPUT=$(aws ec2 delete-security-group --group-id $SEC_GROUP_ID)
+            CMD="aws ec2 delete-security-group --group-id $SEC_GROUP_ID"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
         else
             echo "   No Security Group found"        
