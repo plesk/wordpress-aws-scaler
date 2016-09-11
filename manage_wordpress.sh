@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# TODOS
+# - check if AWS CLI is installed and works
+# - delete EBS volumnes with delete command: aws ec2 delete-volume --volume-id vol-xxxxxxx
+# - create, list and delete autoscaling groups
+# - create, list and delete CloudFront
+# - create, list and delete CloudWatch Alarms
+# - handover settings / DB values to EC2 User Data
+
+
 # Function to load values from the configuration file
 # Parameters: 1 Name of the Key / 2 Default value (optional)
 function get_config
