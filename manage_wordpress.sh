@@ -47,11 +47,32 @@ function parse_json
 # Parameters: 1 Content string / 2 Key within same block / 3 Key to find / 4 Value to match
 function block_search
 {
-    regex="(\{[^{]*\"${3}\":[[:space:]]?\"?${4}\"?[^}]*\})"
-   
+    if [[ -n ${3} ]] && [[ -n ${4} ]]
+    then
+        regex="(\{[^\{]*\"${3}\":[[:space:]]?\"?${4}\"?[^}]*\})"
+    else
+        regex="(.*)"
+    fi
+
     if [[ $1 =~ $regex ]]
     then
         block_data=${BASH_REMATCH[1]}
+
+        if [[ -n ${3} ]] && [[ -n ${4} ]]
+        then
+            regex_sub_block="\}.*\"${3}\":[[:space:]]?\"?${4}\"?(.*\{)?"
+
+            if [[ $block_data =~ $regex_sub_block ]]
+            then
+                regex="(\{[^{]*\{[^{]*\"${3}\":[[:space:]]?\"?${4}\"?[^}]*\}[^}]*\})"
+
+                if [[ $1 =~ $regex ]]
+                then
+                    block_data=${BASH_REMATCH[1]}
+                fi
+            fi
+        fi
+
         regex_block="\"${2}\":[[:space:]]?\"?([^,}\"]*)\"?(,|[[:space:]]*\})"
    
         if [[ $block_data =~ $regex_block ]]
@@ -402,9 +423,7 @@ elif [[ $1 == "list" ]]; then
     echo "Searching Elastic Loadbalancers..."     
     OUTPUT=$(aws elb describe-load-balancers)
 
-    #TODO #BUG block_search does not find upper node "DNSName"
-    #ELB=$(block_search "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
-    ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
+    ELB=$(block_search "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
     if [[ -n $ELB ]]; then    
     	echo "   Elastic Loadbalancer: $ELB" 
     else   
