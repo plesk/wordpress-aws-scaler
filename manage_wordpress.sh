@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # TODOS
-# - check if AWS CLI is installed and works
 # - delete EBS volumnes with delete command: aws ec2 delete-volume --volume-id vol-xxxxxxx
 # - create, list and delete autoscaling groups
 # - create, list and delete CloudFront
@@ -135,6 +134,21 @@ LOG_FILE="manage_wordpress.log"
 # Command line parameters
 ACTION=$1
 PARAM=$2
+
+echo
+echo "##################################"
+echo "# Plesk WordPress Scaler for AWS #"
+echo "##################################"
+echo 
+
+OUTPUT=$(aws --version 2>&1 > /dev/null)
+if [[ ! $OUTPUT == "aws-cli"* ]]; then
+	echo "IMPORTANT: Please install AWS CLI first: https://docs.aws.amazon.com/cli/latest/userguide/installing.html"
+    echo 
+    echo "It's Open Source! Contribute at https://github.com/plesk/wordpress-aws-scaler"
+    echo "Follow us at https://twitter.com/PleskOfficial"
+	exit
+fi
 
 # Create a new WordPress in your AWS account via AWS CLI.
 if [[ $ACTION == "create" ]]; then
@@ -355,10 +369,6 @@ elif [[ $ACTION == "delete" ]]; then
 # List settings and WordPress instances.
 elif [[ $1 == "list" ]]; then
 
-    echo "##################################"
-    echo "# Plesk WordPress Scaler for AWS #"
-    echo "##################################"
-    echo 
     echo "Settings"
     echo "------------------------------------------------------"
     echo "EC2 Instances"
@@ -455,32 +465,14 @@ elif [[ $1 == "list" ]]; then
 	echo "   $i EC2 Instances found"  
 	echo 
     
-# Display introduction and how to contribute.    
-elif [[ $1 == "about" ]]; then
-
-    echo "##################################"
-    echo "# Plesk WordPress Scaler for AWS #"
-    echo "##################################"
-    echo 
-    echo "Plesk WordPress Scaler automates provisioning of a highly available and auto-scaling WordPress to AWS."
-    echo
-    echo "It's Open Source! Contribute at https://github.com/plesk/wordpress-aws-scaler"
-    echo "Follow us at https://twitter.com/PleskOfficial"
-    echo
-
 # Help page        
 else 
-    echo "##################################"
-    echo "# Plesk WordPress Scaler for AWS #"
-    echo "##################################"
-    echo 
     echo "Plesk WordPress Scaler automates provisioning of a highly available and auto-scaling WordPress to AWS."
     echo
     echo "Commands:"
     echo "   manage_wordpress.sh create        Create a new WordPress in your AWS account via AWS CLI."
     echo "   manage_wordpress.sh delete        Delete the WordPress incl. database etc BE CAREFUL - this deletes all that the script created before."
     echo "   manage_wordpress.sh list          List settings and WordPress instances."
-    echo "   manage_wordpress.sh about         Display introduction and how to contribute."
     echo 
     echo "It's Open Source! Contribute at https://github.com/plesk/wordpress-aws-scaler"
     echo "Follow us at https://twitter.com/PleskOfficial"
