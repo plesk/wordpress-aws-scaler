@@ -20,16 +20,26 @@ function get_config
 			if [[ $b =~ $regex ]]
 			then
 				echo ${BASH_REMATCH[1]}
+				set="true"
 				break
-			fi
-        else
-            if [[ -n $2 ]]
-            then
-                echo $2
-                break
+            else
+                if [[ -n $2 ]]
+                then
+                    echo $2
+                    set="true"
+                    break
+                fi
             fi
 		fi
 	done < manage_wordpress.ini
+
+	if [[ -z $set ]]
+    then
+        if [[ -n $2 ]]
+        then
+            echo $2
+        fi
+    fi
 }
 
 function parse_json
