@@ -6,6 +6,7 @@
 # - create, list and delete CloudFront
 # - create, list and delete CloudWatch Alarms
 # - handover settings / DB values to EC2 User Data
+# - check EC2 state for "running", "shutting-down", "terminated", "pending"
 
 
 # Function to load values from the configuration file
@@ -154,7 +155,7 @@ fi
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     
-    echo "[1/6] Check VPC..."
+    echo "[1/7] Check VPC..."
     OUTPUT=$(aws ec2 describe-vpcs)
     # "VpcId": "vpc-fffbe19a",
     # "IsDefault": true
@@ -171,7 +172,7 @@ if [[ $ACTION == "create" ]]; then
     fi    
     echo "   VPC ID: $VPC_ID"
 
-    echo "[2/6] Check Security Group..."
+    echo "[2/7] Check Security Group..."
     OUTPUT=$(aws ec2 describe-security-groups)
 
     SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
@@ -186,7 +187,7 @@ if [[ $ACTION == "create" ]]; then
     fi
     echo "   Security Group Id: $SEC_GROUP_ID"        
        
-    echo "[3/6] Check RDS Database..."
+    echo "[3/7] Check RDS Database..."
     OUTPUT=$(aws rds describe-db-instances)
 
     DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
@@ -201,11 +202,11 @@ if [[ $ACTION == "create" ]]; then
         # [--publicly-accessible | --no-publicly-accessible]
         # [--storage-type <value>]
     	echo "$OUTPUT" >> "$LOG_FILE"
-        DB=$(parse_json "DBInstanceIdentifier" "$OUTPUT")    
+        DB=$(parse_json "DNSName" "$OUTPUT")    
     fi
     echo "   RDS Database: $DB"        
 
-    echo "[4/6] Check S3 Bucket..."
+    echo "[4/7] Check S3 Bucket..."
     OUTPUT=$(aws s3api list-buckets)
 
     S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
@@ -221,7 +222,7 @@ if [[ $ACTION == "create" ]]; then
     echo "   S3 Storage: $S3_BUCKET"        
         
     # TODO Check and create ELB
-    echo "[5/6] Check Elastic Loadbalancer..."
+    echo "[5/7] Check Elastic Loadbalancer..."
     OUTPUT=$(aws elb describe-load-balancers)
 
     ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
@@ -240,7 +241,23 @@ if [[ $ACTION == "create" ]]; then
     # TODO Check and create CloudFront         
     # TODO Check and create Alarms                                 
                
-    echo "[5/6] Creating EC2 instances..."        
+    echo "[6/7] Generating EC2 User Data script..."                       
+    cat >ec2-user-data.sh <<EOL
+#!/bin/bash
+docker pull janloeffler/wordpress-aws-scaler:0.1
+docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='wp_' -e WORDPRESS_URL='http://${ELB}' -it janloeffler/wordpress-aws-scaler:0.1
+EOL
+
+# parameters to add
+# S3_KEY
+# S3_SECRET
+# S3_BUCKET
+# NEWRELIC_KEY
+# NEWRELIC_NAME
+    
+    cat ec2-user-data.sh >> "$LOG_FILE"         
+               
+    echo "[7/7] Creating EC2 instances..."        
     CMD="aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --cli-input-json file://ec2-config.json"
   	echo "$CMD" >> "$LOG_FILE"
     OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count 2 --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --cli-input-json file://ec2-config.json)
