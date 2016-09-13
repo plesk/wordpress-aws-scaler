@@ -1,4 +1,5 @@
 [![Apache 2](http://img.shields.io/badge/license-Apache%202-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![](https://images.microbadger.com/badges/image/janloeffler/wordpress-aws-scaler.svg)](http://microbadger.com/images/janloeffler/wordpress-aws-scaler)
 
 # WordPress AWS Scaler
 
@@ -12,23 +13,49 @@ This is a how-to including scripts about how to auto-scale WordPress across mult
 
 # Prepare AWS CLI on developer machine
  
- * Install AWS CLI
+Install AWS CLI
 
     $ sudo pip install awscli
 
- * Configure AWS CLI
+Configure AWS CLI
 
     $ aws configure
 
- * Check if all works by listing existing ec2 instances
+Check version of AWS CLI
+
+    $ aws --version
+
+Check if all works by listing existing ec2 instances
 
     $ aws ec2 describe-instances
 
- * You can later create new WordPress instances by creating pre-configured ec2 instances
+# Use the WordPress AWS Scaler CLI
 
-    $ aws ec2 run-instances --cli-input-json file://ec2-config.json
+# Display help
 
-# How to build and deploy WordPress on AWS
+    $ sh manage-wordpress.sh --help
+
+# List current settings and scan AWS account for existing WordPress stack
+
+    $ sh manage-wordpress.sh list
+
+# Create a new WordPress stack into your AWS account
+
+Existing VPC, Security Groups, ELB, RDS, ... will be re-used if they were created by this script. Otherwise they will be automatically created based on your settings: see "sh manage-wordpress.sh list"
+
+    $ sh manage-wordpress.sh create
+
+You can run the create command over and over again - it won't destroy anything. The script always checks what already exists and creates only what is missing.
+
+# Delete an existing WordPress including all AWS components and its data -> go back to zero running costs
+
+    $ sh manage-wordpress.sh delete
+
+Usually deleting the EC2 instances will take some seconds until they are really shut down. Until these instances still exist the script will not be able to delete the security group for security reasons from AWS side. If the security group is not yet deleted, wait for 2 min und re-run "sh manage-wordpress.sh delete". When the EC2 instances are terminated, all components will be completely cleaned up. Zero costs!
+
+# The following steps are not needed for the WordPress AWS Scaler CLI since these are automatically done in the background.
+
+# How to build the WordPress docker image and upload it to the registry
 
 # Build the docker image for WordPress
 
@@ -36,7 +63,7 @@ This is a how-to including scripts about how to auto-scale WordPress across mult
 
 # Check that our docker image works
 
-    $ docker run -p 80:80 -it janloeffler/wordpress-aws-scaler:0.1
+    $ docker run -p 80:80 -p 443:443 -it janloeffler/wordpress-aws-scaler:0.1
 
 Visit [http://localhost/](http://localhost/)! Stop your server with **Ctrl+C**.
 
