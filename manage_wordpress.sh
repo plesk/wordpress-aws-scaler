@@ -114,6 +114,25 @@ function block_search_array
     done
 }
 
+# Function to remove invalid characters from identifiers
+# Parameters: 1 Identifier
+function get_valid_id
+{
+	ID=$1
+	ID=${ID//_}
+	ID=$(echo $ID | tr '[:upper:]' '[:lower:]')
+	echo $ID
+}
+
+# Function to generate the s3 url for a given s3 bucket name
+# Parameters: 1 S3 Bucket Name
+function get_s3_url
+{
+	prefix="https://"
+	suffix=".s3.amazonaws.com/"
+	echo $prefix$1$suffix
+}
+
 function print_footer
 {
     echo 
@@ -152,14 +171,13 @@ fi
 
 # if TAG was not passed from CLI, fetch it from settings file or use default
 if [[ -z $TAG ]]; then
-	TAG=$(get_config "manage_wordpress" TAG "plesk_wp")
+	TAG=$(get_config "manage_wordpress" TAG "pleskwp")
 fi
 
-# convert TAG to lowercase
-TAG=$(echo "$TAG" | tr '[:upper:]' '[:lower:]')
+TAG=$(get_valid_id "$TAG")
 
-if ! [[ $TAG =~ ^[a-z0-9_]*$ ]]; then
-	echo "IMPORTANT: The TAG \"$TAG\" must only contain small letters, numbers or \"_\"."
+if ! [[ $TAG =~ ^[a-z0-9]*$ ]]; then
+	echo "IMPORTANT: The TAG \"$TAG\" must only contain small letters or numbers."
 	print_footer
 	exit
 fi
@@ -189,29 +207,27 @@ LC_NAME=$(get_config "$TAG" LC_NAME "$TAG")
 S3_BUCKET_NAME=$(get_config "$TAG" S3_BUCKET_NAME "$TAG")
 
 # remove _ characters in names
-DB_USERNAME=${DB_USERNAME//_}
-DB_USERNAME=$(echo $DB_USERNAME | tr '[:upper:]' '[:lower:]')
-DB_NAME=${DB_NAME//_}
-DB_NAME=$(echo $DB_NAME | tr '[:upper:]' '[:lower:]')
-ELB_NAME=${ELB_NAME//_}
-ELB_NAME=$(echo $ELB_NAME | tr '[:upper:]' '[:lower:]')
-S3_BUCKET_NAME=${S3_BUCKET_NAME//_}
-S3_BUCKET_NAME=$(echo $S3_BUCKET_NAME | tr '[:upper:]' '[:lower:]')
+DB_USERNAME=$(get_valid_id "$DB_USERNAME")
+DB_NAME=$(get_valid_id "$DB_NAME")
+ELB_NAME=$(get_valid_id "$ELB_NAME")
+S3_BUCKET_NAME=$(get_valid_id "$S3_BUCKET_NAME")
 
 # ----------- CREATE -----------
 # Create a new WordPress in your AWS account via AWS CLI.
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
+    STEP=0
     STEPS=9
     
-    echo "[1/$STEPS] Check VPC..."
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check VPC..."
     OUTPUT=$(aws ec2 describe-vpcs)
     # "VpcId": "vpc-fffbe19a",
     # "IsDefault": true
  
     VPC_ID=$(block_search "$OUTPUT" "VpcId" "IsDefault" "true")
     if [[ -z $VPC_ID ]]; then
-        echo "   Creating VPC..."
+        echo "      Creating VPC..."
         # sample OUTPUT: { "Vpc": { "VpcId": "vpc-xxxxxxxx", "InstanceTenancy": "default", "State": "pending", "DhcpOptionsId": "dopt-xxxxxxxx", "CidrBlock": "172.31.0.0/16", "IsDefault": false } }    
         CMD="aws ec2 create-vpc --cidr-block $VPC_IP_BLOCK"
     	echo "$CMD" >> "$LOG_FILE"
@@ -219,14 +235,15 @@ if [[ $ACTION == "create" ]]; then
         echo "$OUTPUT" >> "$LOG_FILE"
         VPC_ID=$(parse_json VpcId "$OUTPUT")
     fi    
-    echo "   VPC ID: $VPC_ID"
+    echo "      VPC ID: $VPC_ID"
 
-    echo "[2/$STEPS] Check Security Group..."
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Security Group..."
     OUTPUT=$(aws ec2 describe-security-groups)
 
     SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
     if [[ -z $SEC_GROUP_ID ]]; then
-        echo "   Creating Security Group..."
+        echo "      Creating Security Group..."
         # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
         CMD="aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description \"$SEC_GROUP_DESC\" --vpc-id $VPC_ID"
     	echo "$CMD" >> "$LOG_FILE"
@@ -234,20 +251,21 @@ if [[ $ACTION == "create" ]]; then
     	echo "$OUTPUT" >> "$LOG_FILE"
         SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")   
         
-        echo "   Adding Firewall Rules..."
+        echo "      Adding Firewall Rules..."
 		aws ec2 authorize-security-group-ingress --group-id $SEC_GROUP_ID --protocol tcp --port 22 --cidr 0.0.0.0/0        
 		aws ec2 authorize-security-group-ingress --group-id $SEC_GROUP_ID --protocol tcp --port 80 --cidr 0.0.0.0/0        
 		aws ec2 authorize-security-group-ingress --group-id $SEC_GROUP_ID --protocol tcp --port 443 --cidr 0.0.0.0/0        
 		aws ec2 authorize-security-group-ingress --group-id $SEC_GROUP_ID --protocol tcp --port 3306 --cidr 0.0.0.0/0                
     fi
-    echo "   Security Group Id: $SEC_GROUP_ID"        
+    echo "      Security Group Id: $SEC_GROUP_ID"        
 
-    echo "[3/$STEPS] Check S3 Bucket..."
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check S3 Bucket..."
     OUTPUT=$(aws s3api list-buckets)
 
     S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
     if [[ -z $S3_BUCKET ]]; then
-        echo "   Creating S3 Bucket..."
+        echo "      Creating S3 Bucket..."
         CMD="aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION"
     	echo "$CMD" >> "$LOG_FILE"
     	OUTPUT=$($CMD)
@@ -257,14 +275,16 @@ if [[ $ACTION == "create" ]]; then
         	aws s3api put-bucket-tagging --bucket $S3_BUCKET_NAME --tagging TagSet="[{Key=Name,Value=$TAG}]"
         fi
     fi
-    echo "   S3 Storage: $S3_BUCKET"        
+    S3_URL=$(get_s3_url $S3_BUCKET_NAME)
+    echo "      S3 Storage: $S3_URL"        
                
-    echo "[4/$STEPS] Check RDS Database..."
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check RDS Database..."
     OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
 
     DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
     if [[ -z $DB ]]; then
-        echo "   Creating RDS Database..."
+        echo "      Creating RDS Database..."
         CMD="aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --db-name $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5 --vpc-security-group-ids $SEC_GROUP_ID --tags Key=Name,Value=$TAG"
     	echo "$CMD" >> "$LOG_FILE"
         OUTPUT=$(aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --db-name $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5 --vpc-security-group-ids $SEC_GROUP_ID --tags "Key=Name,Value=$TAG")
@@ -277,7 +297,7 @@ if [[ $ACTION == "create" ]]; then
 	    DB=$(parse_json DBInstanceIdentifier "$OUTPUT")
 	    
 		# we need to wait for the DB to be up and running in order to get the hostname that we need for the WordPress Docker container	    
-        echo "   Checking until Database is available and has a dns name. This can take a while..."
+        echo "      Checking until Database is available and has a dns name. This can take a while..."
 	    echo
 	    times=0
 	    while [ 20 -gt $times ] && [[ -z $(aws rds describe-db-instances --db-instance-identifier $DB_NAME | grep "Address") ]]
@@ -293,19 +313,20 @@ if [[ $ACTION == "create" ]]; then
 	    DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
 	
 	    if [[ -z $DB ]]; then
-	        echo Database $DB_NAME is not running. Please wait a minute and re-run create!
+	        echo "      Database $DB_NAME is not running. Please wait a minute and re-run create!"
 	        exit    
 	    fi
 	    
     fi
-    echo "   RDS Database: $DB"        
+    echo "      RDS Database: $DB"        
 
-    echo "[5/$STEPS] Check Elastic Loadbalancer..."
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Elastic Loadbalancer..."
     OUTPUT=$(aws elb describe-load-balancers)
 
-    ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
+    ELB=$(block_search "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
     if [[ -z $ELB ]]; then    
-    	echo "   Creating ELB"
+    	echo "      Creating ELB"
    	 	CMD="aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners \"Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80\" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c"
       	echo "$CMD" >> "$LOG_FILE"
    	 	OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
@@ -313,9 +334,10 @@ if [[ $ACTION == "create" ]]; then
         ELB=$(parse_json "DNSName" "$OUTPUT")    
     	aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
     fi
-    echo "   Elastic Loadbalancer: $ELB"                                     
+    echo "      Elastic Loadbalancer: $ELB"                                     
                
-    echo "[6/$STEPS] Generating EC2 User Data script..."                       
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Generating EC2 User Data script..."                       
     cat >ec2-user-data.sh <<EOL
 #!/bin/bash
 docker pull janloeffler/wordpress-aws-scaler:latest
@@ -331,33 +353,34 @@ EOL
     
     cat ec2-user-data.sh >> "$LOG_FILE"         
 
-    echo "[7/$STEPS] Check Launch Configuration..."
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Launch Configuration..."
     OUTPUT=$(aws autoscaling describe-launch-configurations)
 
     LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     if [[ -z $LC ]]; then    
-    	echo "   Creating Launch Configuration"
+    	echo "      Creating Launch Configuration"
    	 	CMD="aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --ebs-optimized --user-data file://ec2-user-data.sh"
       	echo "$CMD" >> "$LOG_FILE"
-   	 	OUTPUT=$(aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --ebs-optimized --user-data file://ec2-user-data.sh)
+   	 	#OUTPUT=$(aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --ebs-optimized --user-data file://ec2-user-data.sh)
+   	 	OUTPUT=$(aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --user-data file://ec2-user-data.sh)
     	echo "$OUTPUT" >> "$LOG_FILE"
-        #LC=$(parse_json "DNSName" "$OUTPUT")    
+        LC=$(parse_json "LaunchConfigurationName" "$OUTPUT")    
     fi
-    echo "   Launch Configuration: $LC" 
+    echo "      Launch Configuration: $LC" 
 
-    echo "[8/$STEPS] Check Auto Scaling Group..."
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Auto Scaling Group..."
     OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
 
     ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     if [[ -z $ASG ]]; then    
-    	echo "   Creating Auto Scaling Group"
-   	 	CMD="aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --health-check-type ELB --health-check-grace-period 60 --tags Key=Name,Value=$TAG"
+    	echo "      Creating Auto Scaling Group"
+   	 	CMD="aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --availability-zones eu-west-1a eu-west-1b eu-west-1c --health-check-type ELB --health-check-grace-period 60 --tags Key=Name,Value=$TAG"
       	echo "$CMD" >> "$LOG_FILE"
-   	 	OUTPUT=$(aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --health-check-type ELB --health-check-grace-period 60 --tags "Key=Name,Value=$TAG")
+   	 	OUTPUT=$(aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --availability-zones eu-west-1a eu-west-1b eu-west-1c --health-check-type ELB --health-check-grace-period 60 --tags "Key=Name,Value=$TAG")
     	# [--desired-capacity <value>]
     	# [--default-cooldown <value>]
-    	# [--availability-zones <value>]
-    	# [--load-balancer-names <value>]
     	# [--target-group-arns <value>]
     	# [--health-check-type <value>]
     	# [--health-check-grace-period <value>]
@@ -365,45 +388,56 @@ EOL
     	# [--vpc-zone-identifier <value>]
     	# [--termination-policies <value>]
     	# [--new-instances-protected-from-scale-in | --no-new-instances-protected-from-scale-in]
-    	# [--tags <value>]
-    	# [--cli-input-json <value>]    	
     	echo "$OUTPUT" >> "$LOG_FILE"
-        #ASG=$(parse_json "DNSName" "$OUTPUT")    
+        ASG=$(parse_json "AutoScalingGroupARN" "$OUTPUT")    
     fi
-    echo "   Auto Scaling Group: $ASG" 
+    echo "      Auto Scaling Group: $ASG" 
 
-    # TODO Check and create AutoScalingGroups 
+	aws autoscaling resume-processes --auto-scaling-group-name $ASG_NAME
+
     # TODO Check and create CloudFront         
     # TODO Check and create Alarms    
                
-    echo "[9/$STEPS] Creating EC2 instances..."        
-    CMD="aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count $EC2_MIN_INSTANCES --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --ebs-optimized --user-data file://ec2-user-data.sh"
-  	echo "$CMD" >> "$LOG_FILE"
-    #OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count $EC2_MIN_INSTANCES --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --ebs-optimized --user-data file://ec2-user-data.sh)
+   	# STEP=$((STEP+1))
+    # echo "[$STEP/$STEPS] Creating EC2 instances..."        
+    # CMD="aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count $EC2_MIN_INSTANCES --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --ebs-optimized --user-data file://ec2-user-data.sh"
+  	# echo "$CMD" >> "$LOG_FILE"
+    # OUTPUT=$(aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count $EC2_MIN_INSTANCES --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --ebs-optimized --user-data file://ec2-user-data.sh)
     # --subnet-id subnet-xxxxxxxx
     # "InstanceId": "i-xxxxxxxx"
-    echo "$OUTPUT" >> "$LOG_FILE"
+    # echo "$OUTPUT" >> "$LOG_FILE"
+	# 
+    # block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+    # for INSTANCE_ID in "${search_array[@]}"
+    # do
+	#     echo "      Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
+    #     OUTPUT2=$(aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$TAG)
+    # done 
 
-    block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+    OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
+ 
+    i=0
+    block_search_array "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
     for INSTANCE_ID in "${search_array[@]}"
     do
-	    echo "   Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
-        OUTPUT2=$(aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$TAG)
-    done 
+	    echo "      EC2 Instance: $INSTANCE_ID"
+	    i=$((i+1))
+    done    
+
+    echo
 
     times=0
-    echo
     while [ 5 -gt $times ] && [[ -z $(aws ec2 describe-instances --instance-id $INSTANCE_ID | grep "running") ]]
     do
         times=$(( $times + 1 ))
-        echo Attempt $times at verifying $INSTANCE_ID is running...
+        echo Check if $INSTANCE_ID is running [$times]...
         sleep 5s
     done
 
     echo
 
     if [ 5 -eq $times ]; then
-        echo Instance $INSTANCE_ID is not running. Exiting...
+        echo EC2 Instance $INSTANCE_ID is not running. Exiting...
         exit    
     fi
 
@@ -413,7 +447,7 @@ EOL
     block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
-	    echo "   EC2 Instance:               $INSTANCE_ID"
+	    echo "      EC2 Instance: $INSTANCE_ID [running]"
 	    i=$((i+1))
     done    
 
@@ -432,64 +466,17 @@ elif [[ $ACTION == "delete" ]]; then
     if [[ $OK == "OK" ]]; then
 
         echo "----- DELETE WORDPRESS -----" >> "$LOG_FILE"
-        STEPS=8
-        echo "[1/$STEPS] Searching EC2 instances..."
-        OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
- 
- 		i=0
-        block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
-        for INSTANCE_ID in "${search_array[@]}"
-        do
-        	# check if instance is already terminated
-        	#"Name": "running"
-	        STATE=$(block_search "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
-        	
-	        echo "   Deleting EC2 Instance \"$INSTANCE_ID\" [$STATE]..."
-	        CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
-            i=$((i+1))
-	    done 
- 		echo "   $i EC2 Instances deleted"  
+        STEPS=9
+        STEP=0
 
-        echo "[2/$STEPS] Searching Auto Scaling Instances..."
-    	OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
-
-    	i=0
-    	block_search_array "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
-    	for INSTANCE_ID in "${search_array[@]}"
-    	do
-	    	echo "   Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
-	        CMD="aws autoscaling terminate-instance-in-auto-scaling-group --instance-id $INSTANCE_ID --should-decrement-desired-capacity"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
-	   		i=$((i+1))
-    	done    
- 		echo "   $i Auto Scaling Instances deleted"  
-
-        echo "[3/$STEPS] Searching Launch Configurations..."
-    	OUTPUT=$(aws autoscaling describe-launch-configurations)
-
-	    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
-    	if [[ -n $LC ]]; then    
-		    echo "   Deleting Launch Configuration \"$LC\"..."     
-            CMD="aws elb delete-launch-configuration --launch-configuration-name $LC_NAME
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
-		else
-            echo "   No Launch Configurations found"        
-		fi
-
-        echo "[4/$STEPS] Searching Auto Scaling Group..."
-    	OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME --force-delete)
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching Auto Scaling Group..."
+    	OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
 
     	ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
-		    echo "   Deleting Auto Scaling Group \"$ASG\"..."     
-            CMD="aws elb delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME
+		    echo "   Setting max instances to 0 for Auto Scaling Group \"$ASG\"..."     
+            CMD="aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 0 --min-size 0"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
@@ -497,7 +484,88 @@ elif [[ $ACTION == "delete" ]]; then
             echo "   No Auto Scaling Group found"        
 		fi
 
-        echo "[5/$STEPS] Searching Elastic Loadbalancer..."
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching Auto Scaling Instances..."
+    	OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
+
+    	i=0
+    	block_search_array "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    	for INSTANCE_ID in "${search_array[@]}"
+    	do
+	    	# echo "   Detaching Auto Scaling Instance \"$INSTANCE_ID\"..."
+	        # CMD="aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --should-decrement-desired-capacity"
+    	  	# echo "$CMD" >> "$LOG_FILE"
+	    	# OUTPUT=$($CMD)
+            # echo "$OUTPUT" >> "$LOG_FILE"
+
+	    	echo "   Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
+	        CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
+	        #CMD="aws autoscaling terminate-instance-in-auto-scaling-group --instance-id $INSTANCE_ID --should-decrement-desired-capacity"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
+            echo "$OUTPUT" >> "$LOG_FILE"
+	   		i=$((i+1))
+    	done    
+ 		echo "   $i Auto Scaling Instances deleted"  
+
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching Launch Configurations..."
+    	OUTPUT=$(aws autoscaling describe-launch-configurations)
+
+	    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
+    	if [[ -n $LC ]]; then    
+		    echo "   Deleting Launch Configuration \"$LC\"..."     
+            CMD="aws autoscaling delete-launch-configuration --launch-configuration-name $LC_NAME"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
+            echo "$OUTPUT" >> "$LOG_FILE"
+		else
+            echo "   No Launch Configurations found"        
+		fi
+
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching CloudWatch Alarms..."
+		# aws cloudwatch delete-alarms --alarm-name AddCapacity RemoveCapacity
+		echo "   Not yet implemented"
+
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching Auto Scaling Group..."
+    	OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
+
+    	ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
+    	if [[ -n $ASG ]]; then    
+		    echo "   Deleting Auto Scaling Group \"$ASG_NAME\"..."     
+            CMD="aws autoscaling delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME --force-delete"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
+            echo "$OUTPUT" >> "$LOG_FILE"
+		else
+            echo "   No Auto Scaling Group found"        
+		fi
+
+	   	# STEP=$((STEP+1))
+        # echo "[$STEP/$STEPS] Searching remaining EC2 instances..."
+        # OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
+ 
+ 		# i=0
+        # block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+        # for INSTANCE_ID in "${search_array[@]}"
+        # do
+        # 	# check if instance is already terminated
+        # 	#"Name": "running"
+	    #     #STATE=$(block_search "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
+        # 	
+	    #    echo "   Deleting EC2 Instance \"$INSTANCE_ID\"..."
+	    #     CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
+    	#   	echo "$CMD" >> "$LOG_FILE"
+	    # 	OUTPUT=$($CMD)
+        #     echo "$OUTPUT" >> "$LOG_FILE"
+        #     i=$((i+1))
+	    # done 
+ 		# echo "   $i EC2 Instances deleted"  
+
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching Elastic Loadbalancer..."
     	OUTPUT=$(aws elb describe-load-balancers)
 
     	ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
@@ -511,7 +579,8 @@ elif [[ $ACTION == "delete" ]]; then
             echo "   No Elastic Loadbalancer found"        
 		fi
 
-        echo "[6/$STEPS] Searching RDS Database..."
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching RDS Database..."
         OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
         DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
         if [[ -n $DB ]]; then
@@ -524,12 +593,14 @@ elif [[ $ACTION == "delete" ]]; then
             echo "   No RDS Database found"        
         fi
 
-        echo "[7/$STEPS] Searching S3 Bucket..."
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching S3 Bucket..."
         OUTPUT=$(aws s3api list-buckets)
 
         S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
         if [[ -n $S3_BUCKET ]]; then
-            echo "   Deleting S3 Bucket \"$S3_BUCKET_NAME\"..."
+		    S3_URL=$(get_s3_url $S3_BUCKET_NAME)
+            echo "   Deleting S3 Bucket \"$S3_URL\"..."
             CMD="aws s3api delete-bucket --bucket $S3_BUCKET_NAME"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
@@ -538,7 +609,8 @@ elif [[ $ACTION == "delete" ]]; then
             echo "   No S3 Bucket found"        
         fi
 
-        echo "[8/$STEPS] Searching Security Group..."
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
 
         SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
@@ -563,20 +635,23 @@ elif [[ $1 == "list" ]]; then
 
     echo "Settings"
     echo "------------------------------------------------------"
+    echo "Tag:                           $TAG "
+	echo
+    echo "Network"
+    echo "   Security Group Name:        $SEC_GROUP_NAME"
+    echo "   Security Group Description: $SEC_GROUP_DESC"
+    echo "   VPC IP Block:               $VPC_IP_BLOCK "
+	echo 
     echo "EC2 Instances"
     echo "   Instance Type:              $INSTANCE_TYPE"
     echo "   Region:                     $REGION"
     echo "   Amazon Machine Image Id:    $AMI"
     echo "   Device Name:                $DEVICE_NAME"
-    echo "   Security Group Name:        $SEC_GROUP_NAME"
-    echo "   Security Group Description: $SEC_GROUP_DESC"
-    echo "   VPC IP Block:               $VPC_IP_BLOCK "
-    echo "   Tag:                        $TAG "
     echo
     echo "Elastic Loadbalancer"
     echo "   ELB Name:                   $ELB_NAME"
-    echo "   Auto Scaling Group:         $ASG_NAME"
     echo "   Launch Configuration:       $LC_NAME"
+    echo "   Auto Scaling Group:         $ASG_NAME"
     echo "   EC2 Min Instances:          $EC2_MIN_INSTANCES"
     echo "   EC2 Max Instances:          $EC2_MAX_INSTANCES"
     echo
@@ -616,7 +691,8 @@ elif [[ $1 == "list" ]]; then
 
     S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
     if [[ -n $S3_BUCKET ]]; then
-	    echo "   S3 Storage:                 $S3_BUCKET"
+    	S3_URL=$(get_s3_url $S3_BUCKET_NAME)
+	    echo "   S3 Storage:                 $S3_URL"
 	else
 	    echo "   S3 Storage:                 none"
     fi 
@@ -638,7 +714,16 @@ elif [[ $1 == "list" ]]; then
     else   
     	echo "   Elastic Loadbalancer:       none"    
     fi
-    
+ 
+    OUTPUT=$(aws autoscaling describe-launch-configurations)
+
+    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
+    if [[ -n $LC ]]; then    
+    	echo "   Launch Configurations:      $LC" 
+    else   
+    	echo "   Launch Configurations:      none"    
+    fi
+       
     OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
 
     ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
@@ -648,15 +733,6 @@ elif [[ $1 == "list" ]]; then
     	echo "   Auto Scaling Group:         none"    
     fi
     
-    OUTPUT=$(aws autoscaling describe-launch-configurations)
-
-    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
-    if [[ -n $LC ]]; then    
-    	echo "   Launch Configurations:      $LC" 
-    else   
-    	echo "   Launch Configurations:      none"    
-    fi
-   
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
  
     i=0
@@ -667,20 +743,20 @@ elif [[ $1 == "list" ]]; then
 	    i=$((i+1))
     done    
     
-	echo "   Auto Scaling Instances:     none" 
+	echo "   Auto Scaling Instances:     $i" 
 	    
-    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
- 
-    i=0
-    block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
-    for INSTANCE_ID in "${search_array[@]}"
-    do
-	    echo "   EC2 Instance:               $INSTANCE_ID"
-	    i=$((i+1))
-    done    
-    
-	echo "   EC2 Instances:              $i"  
-	echo 
+    # OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
+    #
+    # i=0
+    # block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+    # for INSTANCE_ID in "${search_array[@]}"
+    # do
+	#     echo "   EC2 Instance:               $INSTANCE_ID"
+	#     i=$((i+1))
+    # done    
+    # 
+	# echo "   EC2 Instances:              $i"  
+	# echo 
     
 # ----------- CONSOLE -----------
 # Print console output of first EC2 instance found.
