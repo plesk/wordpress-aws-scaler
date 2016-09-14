@@ -59,17 +59,17 @@ Usually deleting the EC2 instances will take some seconds until they are really 
 
 # Build the docker image for WordPress
 
-    $ docker build -t janloeffler/wordpress-aws-scaler:0.1 .
+    $ docker build -t janloeffler/wordpress-aws-scaler:latest -t janloeffler/wordpress-aws-scaler:0.2 .
 
 # Check that our docker image works
 
-    $ docker run -p 80:80 -p 443:443 -it janloeffler/wordpress-aws-scaler:0.1
+    $ docker run -p 80:80 -p 443:443 -it janloeffler/wordpress-aws-scaler:latest
 
 Visit [http://localhost/](http://localhost/)! Stop your server with **Ctrl+C**.
 
 # Upload docker image to registry
 
-    $ docker push janloeffler/wordpress-aws-scaler:0.1
+    $ docker push janloeffler/wordpress-aws-scaler:latest
 
 # Setup MySQL database with RDS
 
