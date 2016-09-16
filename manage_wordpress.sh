@@ -280,6 +280,9 @@ if [[ $ACTION == "create" ]]; then
                
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check RDS Database..."
+
+	# TODO throws an error message if --db-instance-identifier not found -> better search without
+
     OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
 
     DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
@@ -475,13 +478,13 @@ elif [[ $ACTION == "delete" ]]; then
 
     	ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
-		    echo "   Setting max instances to 0 for Auto Scaling Group \"$ASG\"..."     
+		    echo "      Setting max instances to 0 for Auto Scaling Group \"$ASG\"..."     
             CMD="aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 0 --min-size 0"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
 		else
-            echo "   No Auto Scaling Group found"        
+            echo "      No Auto Scaling Group found"        
 		fi
 
 	   	STEP=$((STEP+1))
@@ -492,13 +495,13 @@ elif [[ $ACTION == "delete" ]]; then
     	block_search_array "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
     	for INSTANCE_ID in "${search_array[@]}"
     	do
-	    	# echo "   Detaching Auto Scaling Instance \"$INSTANCE_ID\"..."
+	    	# echo "      Detaching Auto Scaling Instance \"$INSTANCE_ID\"..."
 	        # CMD="aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --should-decrement-desired-capacity"
     	  	# echo "$CMD" >> "$LOG_FILE"
 	    	# OUTPUT=$($CMD)
             # echo "$OUTPUT" >> "$LOG_FILE"
 
-	    	echo "   Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
+	    	echo "      Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
 	        CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
 	        #CMD="aws autoscaling terminate-instance-in-auto-scaling-group --instance-id $INSTANCE_ID --should-decrement-desired-capacity"
     	  	echo "$CMD" >> "$LOG_FILE"
@@ -506,7 +509,7 @@ elif [[ $ACTION == "delete" ]]; then
             echo "$OUTPUT" >> "$LOG_FILE"
 	   		i=$((i+1))
     	done    
- 		echo "   $i Auto Scaling Instances deleted"  
+ 		echo "      $i Auto Scaling Instances deleted"  
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Launch Configurations..."
@@ -514,19 +517,19 @@ elif [[ $ACTION == "delete" ]]; then
 
 	    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     	if [[ -n $LC ]]; then    
-		    echo "   Deleting Launch Configuration \"$LC\"..."     
+		    echo "      Deleting Launch Configuration \"$LC\"..."     
             CMD="aws autoscaling delete-launch-configuration --launch-configuration-name $LC_NAME"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
 		else
-            echo "   No Launch Configurations found"        
+            echo "      No Launch Configurations found"        
 		fi
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching CloudWatch Alarms..."
 		# aws cloudwatch delete-alarms --alarm-name AddCapacity RemoveCapacity
-		echo "   Not yet implemented"
+		echo "      Not yet implemented"
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Auto Scaling Group..."
@@ -534,13 +537,13 @@ elif [[ $ACTION == "delete" ]]; then
 
     	ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
-		    echo "   Deleting Auto Scaling Group \"$ASG_NAME\"..."     
+		    echo "      Deleting Auto Scaling Group \"$ASG_NAME\"..."     
             CMD="aws autoscaling delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME --force-delete"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
 		else
-            echo "   No Auto Scaling Group found"        
+            echo "      No Auto Scaling Group found"        
 		fi
 
 	   	# STEP=$((STEP+1))
@@ -555,14 +558,14 @@ elif [[ $ACTION == "delete" ]]; then
         # 	#"Name": "running"
 	    #     #STATE=$(block_search "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
         # 	
-	    #    echo "   Deleting EC2 Instance \"$INSTANCE_ID\"..."
+	    #    echo "      Deleting EC2 Instance \"$INSTANCE_ID\"..."
 	    #     CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
     	#   	echo "$CMD" >> "$LOG_FILE"
 	    # 	OUTPUT=$($CMD)
         #     echo "$OUTPUT" >> "$LOG_FILE"
         #     i=$((i+1))
 	    # done 
- 		# echo "   $i EC2 Instances deleted"  
+ 		# echo "      $i EC2 Instances deleted"  
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Elastic Loadbalancer..."
@@ -570,13 +573,13 @@ elif [[ $ACTION == "delete" ]]; then
 
     	ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
     	if [[ -n $ELB ]]; then    
-		    echo "   Deleting Elastic Loadbalancer \"$ELB\"..."     
+		    echo "      Deleting Elastic Loadbalancer \"$ELB\"..."     
             CMD="aws elb delete-load-balancer --load-balancer-name $ELB_NAME"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
 		else
-            echo "   No Elastic Loadbalancer found"        
+            echo "      No Elastic Loadbalancer found"        
 		fi
 
 	   	STEP=$((STEP+1))
@@ -584,13 +587,13 @@ elif [[ $ACTION == "delete" ]]; then
         OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
         DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
         if [[ -n $DB ]]; then
-            echo "   Deleting RDS Database \"$DB\"..."
+            echo "      Deleting RDS Database \"$DB\"..."
             CMD="aws rds delete-db-instance --db-instance-identifier $DB_NAME --skip-final-snapshot"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
         else
-            echo "   No RDS Database found"        
+            echo "      No RDS Database found"        
         fi
 
 	   	STEP=$((STEP+1))
@@ -600,13 +603,13 @@ elif [[ $ACTION == "delete" ]]; then
         S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
         if [[ -n $S3_BUCKET ]]; then
 		    S3_URL=$(get_s3_url $S3_BUCKET_NAME)
-            echo "   Deleting S3 Bucket \"$S3_URL\"..."
+            echo "      Deleting S3 Bucket \"$S3_URL\"..."
             CMD="aws s3api delete-bucket --bucket $S3_BUCKET_NAME"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
         else
-            echo "   No S3 Bucket found"        
+            echo "      No S3 Bucket found"        
         fi
 
 	   	STEP=$((STEP+1))
@@ -615,13 +618,13 @@ elif [[ $ACTION == "delete" ]]; then
 
         SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
         if [[ -n $SEC_GROUP_ID ]]; then
-            echo "   Deleting Security Group \"$SEC_GROUP_ID\"..."
+            echo "      Deleting Security Group \"$SEC_GROUP_ID\"..."
             CMD="aws ec2 delete-security-group --group-id $SEC_GROUP_ID"
     	  	echo "$CMD" >> "$LOG_FILE"
 	    	OUTPUT=$($CMD)
             echo "$OUTPUT" >> "$LOG_FILE"
         else
-            echo "   No Security Group found"        
+            echo "      No Security Group found"        
         fi 
 
         echo 
@@ -756,7 +759,8 @@ elif [[ $1 == "list" ]]; then
     # done    
     # 
 	# echo "   EC2 Instances:              $i"  
-	# echo 
+	
+	echo 
     
 # ----------- CONSOLE -----------
 # Print console output of first EC2 instance found.
