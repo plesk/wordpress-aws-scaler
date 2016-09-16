@@ -584,7 +584,7 @@ elif [[ $ACTION == "delete" ]]; then
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching RDS Database..."
-        OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
+        OUTPUT=$(aws rds describe-db-instances)
         DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
         if [[ -n $DB ]]; then
             echo "      Deleting RDS Database \"$DB\"..."
@@ -700,10 +700,12 @@ elif [[ $1 == "list" ]]; then
 	    echo "   S3 Storage:                 none"
     fi 
      
-    OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
+    OUTPUT=$(aws rds describe-db-instances)
 
-    DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
+    DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
     if [[ -n $DB ]]; then
+    	OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
+    	DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
 	    echo "   RDS Database:               $DB"
 	else
 	    echo "   RDS Database:               none"
