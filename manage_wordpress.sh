@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # TODOS
-# - create, list and delete autoscaling groups
 # - create, list and delete CloudFront
 # - create, list and delete CloudWatch Alarms
 # - check EC2 state for "running", "shutting-down", "terminated", "pending"
@@ -281,11 +280,9 @@ if [[ $ACTION == "create" ]]; then
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check RDS Database..."
 
-	# TODO throws an error message if --db-instance-identifier not found -> better search without
+    OUTPUT=$(aws rds describe-db-instances)
 
-    OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
-
-    DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
+    DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
     if [[ -z $DB ]]; then
         echo "      Creating RDS Database..."
         CMD="aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --db-name $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5 --vpc-security-group-ids $SEC_GROUP_ID --tags Key=Name,Value=$TAG"
@@ -298,9 +295,13 @@ if [[ $ACTION == "create" ]]; then
         # [--storage-type <value>]
     	echo "$OUTPUT" >> "$LOG_FILE"
 	    DB=$(parse_json DBInstanceIdentifier "$OUTPUT")
-	    
+	fi
+
+	OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
+    DB=$(block_search "$OUTPUT" "Address" "Port" "3306")	 
+    if [[ -z $(echo $OUTPUT | grep "Address") ]]; then	  
 		# we need to wait for the DB to be up and running in order to get the hostname that we need for the WordPress Docker container	    
-        echo "      Checking until Database is available and has a dns name. This can take a while..."
+		echo "      Checking until Database is available and has a dns name. This can take a while..."
 	    echo
 	    times=0
 	    while [ 20 -gt $times ] && [[ -z $(aws rds describe-db-instances --db-instance-identifier $DB_NAME | grep "Address") ]]
@@ -319,8 +320,8 @@ if [[ $ACTION == "create" ]]; then
 	        echo "      Database $DB_NAME is not running. Please wait a minute and re-run create!"
 	        exit    
 	    fi
-	    
-    fi
+	fi
+	        
     echo "      RDS Database: $DB"        
 
    	STEP=$((STEP+1))
@@ -454,6 +455,9 @@ EOL
 	    i=$((i+1))
     done    
 
+	# TODO Create CloudWatch Alarms
+	# TODO Create CloudFront
+
     echo 
     echo "$i WordPress instances up and running."   
     echo 
@@ -528,8 +532,21 @@ elif [[ $ACTION == "delete" ]]; then
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching CloudWatch Alarms..."
-		# aws cloudwatch delete-alarms --alarm-name AddCapacity RemoveCapacity
-		echo "      Not yet implemented"
+		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
+	
+    	i=0
+    	block_search_array "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
+    	for ALARM_NAME in "${search_array[@]}"
+    	do
+	  		echo "      Deleting CloudWatch Alarm \"$ALARM_NAME\"..."
+			CMD="aws cloudwatch delete-alarms --alarm-name $ALARM_NAME"
+    	  	echo "$CMD" >> "$LOG_FILE"
+	    	OUTPUT=$($CMD)
+            echo "$OUTPUT" >> "$LOG_FILE"
+	    	i=$((i+1))
+    	done    
+    
+		echo "      $i CloudWatch Alarms deleted"
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Auto Scaling Group..."
@@ -559,11 +576,11 @@ elif [[ $ACTION == "delete" ]]; then
 	    #     #STATE=$(block_search "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
         # 	
 	    #    echo "      Deleting EC2 Instance \"$INSTANCE_ID\"..."
-	    #     CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
-    	#   	echo "$CMD" >> "$LOG_FILE"
-	    # 	OUTPUT=$($CMD)
-        #     echo "$OUTPUT" >> "$LOG_FILE"
-        #     i=$((i+1))
+	    #    CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
+    	#    echo "$CMD" >> "$LOG_FILE"
+	    # 	 OUTPUT=$($CMD)
+        #    echo "$OUTPUT" >> "$LOG_FILE"
+        #    i=$((i+1))
 	    # done 
  		# echo "      $i EC2 Instances deleted"  
 
@@ -611,6 +628,8 @@ elif [[ $ACTION == "delete" ]]; then
         else
             echo "      No S3 Bucket found"        
         fi
+
+		# TODO Delete CloudFront
 
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Security Group..."
@@ -689,7 +708,9 @@ elif [[ $1 == "list" ]]; then
 	else
 	    echo "   Security Group:             none"
     fi
-     
+
+	# TODO Show CloudFront    
+             
     OUTPUT=$(aws s3api list-buckets)
 
     S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
@@ -738,6 +759,18 @@ elif [[ $1 == "list" ]]; then
     	echo "   Auto Scaling Group:         none"    
     fi
     
+	OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
+	
+    i=0
+    block_search_array "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
+    for ALARM_NAME in "${search_array[@]}"
+    do
+	    echo "   CloudWatch Alarm:           $ALARM_NAME"
+	    i=$((i+1))
+    done    
+    
+	echo "   CloudWatch Alarms:          $i" 
+	
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
  
     i=0
