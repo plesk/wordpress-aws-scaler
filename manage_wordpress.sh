@@ -43,11 +43,13 @@ function get_config
 	fi
 }
 
-function parse_json
+# Function to get a value from JSON text for a given key
+# Parameters: 1 Content String / 2 Key to find
+function get_value
 {
-    regex="\"${1}\":[[:space:]]?\"?([^,}\"]*)\"?(,|[[:space:]]\})"
+    regex="\"${2}\":[[:space:]]?\"?([^,}\"]*)\"?(,|[[:space:]]\})"
  
-    if [[ $2 =~ $regex ]]; then
+    if [[ $1 =~ $regex ]]; then
         echo ${BASH_REMATCH[1]}
     else
         echo ''
@@ -56,7 +58,7 @@ function parse_json
 
 # Function to get a specific value within a specified block, by using a key / pair search
 # Parameters: 1 Content string / 2 Key within same block / 3 Key to find / 4 Value to match
-function block_search
+function search_value
 {
     if [[ -n ${3} ]] && [[ -n ${4} ]]
     then
@@ -95,21 +97,21 @@ function block_search
  
 # Function to get an array of specific values within a specified block, by using a key / pair search
 # Parameters: 1 Content string / 2 Key within same block / 3 Key to find / 4 Value to match
-function block_search_array
+function search_values
 {
     search_array=()
  
-    block_search_content=${1}
-    block_search_result_key=${2}
-    block_search_key=${3}
-    block_search_value=${4}
+    content=${1}
+    result_key=${2}
+    key=${3}
+    value=${4}
 
-    var_block=$(block_search "$block_search_content" "$block_search_result_key" "$block_search_key" "$block_search_value")
+    var_block=$(search_value "$content" "$result_key" "$key" "$value")
  
     while [ -n "$var_block" ]; do
         search_array[index++]="$var_block"
-        block_search_content="${block_search_content/$block_search_value/}"
-        var_block=$(block_search "$block_search_content" "$block_search_result_key" "$block_search_key" "$block_search_value")
+        content="${content/$value/}"
+        var_block=$(search_value "$content" "$result_key" "$key" "$value")
     done
 }
 
@@ -138,6 +140,17 @@ function print_footer
     echo "It's Open Source! Contribute at https://github.com/plesk/wordpress-aws-scaler"
     echo "Follow us at https://twitter.com/PleskOfficial"
     echo
+}
+
+# Function to run and log a command
+# Parameters: 1 command string to execute & log to file
+function run_cmd
+{
+    CMD=$1
+    echo "$CMD" >> "$LOG_FILE"
+    OUTPUT=$($CMD)
+    echo "$OUTPUT" >> "$LOG_FILE"
+    echo $OUTPUT
 }
 
 # ----------- CHECK AND CONFIGURE -----------
@@ -205,6 +218,14 @@ ASG_NAME=$(get_config "$TAG" ASG_NAME "$TAG")
 LC_NAME=$(get_config "$TAG" LC_NAME "$TAG")
 S3_BUCKET_NAME=$(get_config "$TAG" S3_BUCKET_NAME "$TAG")
 
+NEWRELIC_KEY=$(get_config "$TAG" NEWRELIC_KEY "")
+NEWRELIC_NAME=$(get_config "$TAG" NEWRELIC_NAME "$TAG")
+WORDPRESS_TITLE=$(get_config "$TAG" WORDPRESS_TITLE "WordPress scaled on AWS")
+WORDPRESS_DB_PREFIX=$(get_config "$TAG" WORDPRESS_DB_PREFIX "wp_")
+WORDPRESS_USER_NAME=$(get_config "$TAG" WORDPRESS_USER_NAME "wordpress")
+WORDPRESS_USER_PASSWORD=$(get_config "$TAG" WORDPRESS_USER_PASSWORD "xWH44tVfAoAqJx")
+WORDPRESS_USER_EMAIL=$(get_config "$TAG" WORDPRESS_USER_EMAIL "jan@plesk.com")
+
 # remove _ characters in names
 DB_USERNAME=$(get_valid_id "$DB_USERNAME")
 DB_NAME=$(get_valid_id "$DB_NAME")
@@ -216,39 +237,34 @@ S3_BUCKET_NAME=$(get_valid_id "$S3_BUCKET_NAME")
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     STEP=0
-    STEPS=9
+    STEPS=10
     
+   	# ----- CREATE VPC -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check VPC..."
     OUTPUT=$(aws ec2 describe-vpcs)
-    # "VpcId": "vpc-fffbe19a",
-    # "IsDefault": true
  
-    VPC_ID=$(block_search "$OUTPUT" "VpcId" "IsDefault" "true")
+    VPC_ID=$(search_value "$OUTPUT" "VpcId" "IsDefault" "true")
     if [[ -z $VPC_ID ]]; then
         echo "      Creating VPC..."
-        # sample OUTPUT: { "Vpc": { "VpcId": "vpc-xxxxxxxx", "InstanceTenancy": "default", "State": "pending", "DhcpOptionsId": "dopt-xxxxxxxx", "CidrBlock": "172.31.0.0/16", "IsDefault": false } }    
-        CMD="aws ec2 create-vpc --cidr-block $VPC_IP_BLOCK"
-    	echo "$CMD" >> "$LOG_FILE"
-    	OUTPUT=$($CMD)
-        echo "$OUTPUT" >> "$LOG_FILE"
-        VPC_ID=$(parse_json VpcId "$OUTPUT")
+        OUTPUT=$(run_cmd "aws ec2 create-vpc --cidr-block $VPC_IP_BLOCK")
+        VPC_ID=$(get_value "$OUTPUT" "VpcId")
     fi    
     echo "      VPC ID: $VPC_ID"
 
+   	# ----- CREATE SECURITY GROUP -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Security Group..."
     OUTPUT=$(aws ec2 describe-security-groups)
 
-    SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
+    SEC_GROUP_ID=$(search_value "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
     if [[ -z $SEC_GROUP_ID ]]; then
         echo "      Creating Security Group..."
-        # sample OUTPUT: { "GroupId": "sg-xxxxxxxxx" }       
         CMD="aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description \"$SEC_GROUP_DESC\" --vpc-id $VPC_ID"
     	echo "$CMD" >> "$LOG_FILE"
         OUTPUT=$(aws ec2 create-security-group --group-name $SEC_GROUP_NAME --description "$SEC_GROUP_DESC" --vpc-id $VPC_ID)
     	echo "$OUTPUT" >> "$LOG_FILE"
-        SEC_GROUP_ID=$(parse_json GroupId "$OUTPUT")   
+        SEC_GROUP_ID=$(get_value "$OUTPUT" "GroupId")   
         
         echo "      Adding Firewall Rules..."
 		aws ec2 authorize-security-group-ingress --group-id $SEC_GROUP_ID --protocol tcp --port 22 --cidr 0.0.0.0/0        
@@ -258,31 +274,45 @@ if [[ $ACTION == "create" ]]; then
     fi
     echo "      Security Group Id: $SEC_GROUP_ID"        
 
+   	# ----- CREATE S3 -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check S3 Bucket..."
     OUTPUT=$(aws s3api list-buckets)
 
-    S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
+    S3_BUCKET=$(search_value "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
     if [[ -z $S3_BUCKET ]]; then
         echo "      Creating S3 Bucket..."
-        CMD="aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION"
-    	echo "$CMD" >> "$LOG_FILE"
-    	OUTPUT=$($CMD)
-    	echo "$OUTPUT" >> "$LOG_FILE"
-        S3_BUCKET=$(parse_json "Location" "$OUTPUT")    
+        OUTPUT=$(run_cmd "aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION")
+        S3_BUCKET=$(get_value "$OUTPUT" "Location")    
         if [[ -n $S3_BUCKET ]]; then
         	aws s3api put-bucket-tagging --bucket $S3_BUCKET_NAME --tagging TagSet="[{Key=Name,Value=$TAG}]"
         fi
     fi
     S3_URL=$(get_s3_url $S3_BUCKET_NAME)
     echo "      S3 Storage: $S3_URL"        
-               
+
+    # TODO Check and create CloudFront  
+           
+   	# ----- CREATE CLOUD FRONT -----
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Cloud Front..."
+    # enable AWC CLI preview mode for CloudFront Support
+    aws configure set preview.cloudfront true
+    OUTPUT=$(aws cloudfront list-distributions)
+    CF=$(get_value "$OUTPUT" "DomainName") 
+    if [[ -z $CF ]]; then
+        echo "      Creating Cloud Front..."
+        echo "      Not implemented yet!"
+        # TODO OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_BUCKET_NAME.s3.amazonaws.com")
+    fi
+    echo "      Cloud Front: $CF"        
+	               
+   	# ----- CREATE RDS -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check RDS Database..."
 
     OUTPUT=$(aws rds describe-db-instances)
-
-    DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
+    DB=$(search_value "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
     if [[ -z $DB ]]; then
         echo "      Creating RDS Database..."
         CMD="aws rds create-db-instance --engine $DB_ENGINE --db-instance-class $DB_INSTANCE_TYPE --db-instance-identifier $DB_NAME --db-name $DB_NAME --master-user-password $DB_PASSWORD --master-username $DB_USERNAME --allocated-storage 5 --vpc-security-group-ids $SEC_GROUP_ID --tags Key=Name,Value=$TAG"
@@ -291,14 +321,14 @@ if [[ $ACTION == "create" ]]; then
         # --db-security-groups <value>
         # --vpc-security-group-ids <value>
         # --license-model general-public-license
-        # [--publicly-accessible | --no-publicly-accessible]
-        # [--storage-type <value>]
+        # --publicly-accessible | --no-publicly-accessible
+        # --storage-type <value>
     	echo "$OUTPUT" >> "$LOG_FILE"
-	    DB=$(parse_json DBInstanceIdentifier "$OUTPUT")
+	    DB=$(get_value "$OUTPUT" "DBInstanceIdentifier")
 	fi
 
 	OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
-    DB=$(block_search "$OUTPUT" "Address" "Port" "3306")	 
+    DB=$(search_value "$OUTPUT" "Address" "Port" "3306")	 
     if [[ -z $(echo $OUTPUT | grep "Address") ]]; then	  
 		# we need to wait for the DB to be up and running in order to get the hostname that we need for the WordPress Docker container	    
 		echo "      Checking until Database is available and has a dns name. This can take a while..."
@@ -314,7 +344,7 @@ if [[ $ACTION == "create" ]]; then
 	    echo
 		
 		OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
-	    DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
+	    DB=$(search_value "$OUTPUT" "Address" "Port" "3306")
 	
 	    if [[ -z $DB ]]; then
 	        echo "      Database $DB_NAME is not running. Please wait a minute and re-run create!"
@@ -324,44 +354,61 @@ if [[ $ACTION == "create" ]]; then
 	        
     echo "      RDS Database: $DB"        
 
+   	# ----- CREATE ELB -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Elastic Loadbalancer..."
     OUTPUT=$(aws elb describe-load-balancers)
 
-    ELB=$(block_search "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
+    ELB=$(search_value "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
     if [[ -z $ELB ]]; then    
     	echo "      Creating ELB"
    	 	CMD="aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners \"Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80\" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c"
       	echo "$CMD" >> "$LOG_FILE"
    	 	OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
     	echo "$OUTPUT" >> "$LOG_FILE"
-        ELB=$(parse_json "DNSName" "$OUTPUT")    
+        ELB=$(get_value "$OUTPUT" "DNSName")    
     	aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
     fi
-    echo "      Elastic Loadbalancer: $ELB"                                     
+    echo "      Elastic Loadbalancer: $ELB"   
                
+   	# ----- CREATE EC2 USER DATA SCRIPT -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Generating EC2 User Data script..."                       
-    cat >ec2-user-data.sh <<EOL
+
+cat >ec2-user-data.sh <<EOL
 #!/bin/bash
 docker pull janloeffler/wordpress-aws-scaler:latest
-docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='wp_' -e WORDPRESS_URL='http://${ELB}' -it janloeffler/wordpress-aws-scaler:latest
+docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='${WORDPRESS_DB_PREFIX}' -e WORDPRESS_URL='http://${ELB}' -e WORDPRESS_TITLE='${WORDPRESS_TITLE}' -e WORDPRESS_USER_EMAIL='${WORDPRESS_USER_EMAIL}' -e NEWRELIC_KEY='${NEWRELIC_KEY}' -e NEWRELIC_NAME='${NEWRELIC_NAME}' -e S3_BUCKET='${S3_URL}' -it janloeffler/wordpress-aws-scaler:latest
 EOL
 
-# parameters to add
-# S3_KEY
-# S3_SECRET
-# S3_BUCKET
-# NEWRELIC_KEY
-# NEWRELIC_NAME
-    
     cat ec2-user-data.sh >> "$LOG_FILE"         
 
+    # TODO check whether we can write docker parameters to a file and load it from there instead of a very long command
+
+    # -e S3_SECRET='${S3_SECRET}'
+    # -e S3_KEY='${S3_KEY}'
+    # -e WORDPRESS_USER_NAME='${WORDPRESS_USER_NAMEXXX}'
+    # -e WORDPRESS_USER_PASSWORD='${WORDPRESS_USER_PASSWORD}'
+
+	# parameters used by Docker script
+	# S3_KEY
+	# S3_SECRET
+	# S3_BUCKET
+	# NEWRELIC_KEY
+	# NEWRELIC_NAME
+	# WORDPRESS_TITLE
+	# WORDPRESS_URL
+	# WORDPRESS_DB_PREFIX
+	# WORDPRESS_USER_NAME
+	# WORDPRESS_USER_PASSWORD
+	# WORDPRESS_USER_EMAIL
+
+   	# ----- CREATE LAUNCH CONFIGURATIONS -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Launch Configuration..."
     OUTPUT=$(aws autoscaling describe-launch-configurations)
 
-    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
+    LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     if [[ -z $LC ]]; then    
     	echo "      Creating Launch Configuration"
    	 	CMD="aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --ebs-optimized --user-data file://ec2-user-data.sh"
@@ -369,15 +416,39 @@ EOL
    	 	#OUTPUT=$(aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --ebs-optimized --user-data file://ec2-user-data.sh)
    	 	OUTPUT=$(aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --user-data file://ec2-user-data.sh)
     	echo "$OUTPUT" >> "$LOG_FILE"
-        LC=$(parse_json "LaunchConfigurationName" "$OUTPUT")    
+        LC=$(get_value "$OUTPUT" "LaunchConfigurationName")    
     fi
     echo "      Launch Configuration: $LC" 
 
-   	STEP=$((STEP+1))
+	# TODO Create CloudWatch Alarms
+
+   	# ----- CREATE CLOUD WATCH ALARMS -----
+	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check CloudWatch Alarms..."
+	OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
+	
+    ALARM_NAME=$(search_value "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization")
+    if [[ -z $ALARM_NAME ]]; then    
+    	echo "      Creating CloudWatch Alarms"
+		echo "      CloudWatch Alarm: $ALARM_NAME -> Not implemented yet!"
+		# TODO finish CloudWatch - might required SNS queue?
+        # aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description "$TAG Alarm when CPU exceeds 70 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold  --dimensions "Name=InstanceId,Value=i-12345678" --evaluation-periods 2 --alarm-actions arn:aws:sns:${REGION}:111122223333:MyTopic --unit Percent
+	else
+		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
+		
+	    search_values "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
+	    for ALARM_NAME in "${search_array[@]}"
+	    do
+		    echo "      CloudWatch Alarm: $ALARM_NAME"
+	    done    	
+    fi    
+
+   	# ----- CREATE AUTO SCALING GROUPS -----
+    STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Auto Scaling Group..."
     OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
 
-    ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
+    ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     if [[ -z $ASG ]]; then    
     	echo "      Creating Auto Scaling Group"
    	 	CMD="aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --availability-zones eu-west-1a eu-west-1b eu-west-1c --health-check-type ELB --health-check-grace-period 60 --tags Key=Name,Value=$TAG"
@@ -386,22 +457,18 @@ EOL
     	# [--desired-capacity <value>]
     	# [--default-cooldown <value>]
     	# [--target-group-arns <value>]
-    	# [--health-check-type <value>]
-    	# [--health-check-grace-period <value>]
     	# [--placement-group <value>]
     	# [--vpc-zone-identifier <value>]
     	# [--termination-policies <value>]
     	# [--new-instances-protected-from-scale-in | --no-new-instances-protected-from-scale-in]
     	echo "$OUTPUT" >> "$LOG_FILE"
-        ASG=$(parse_json "AutoScalingGroupARN" "$OUTPUT")    
+        ASG=$(get_value "$OUTPUT" "AutoScalingGroupARN")    
     fi
     echo "      Auto Scaling Group: $ASG" 
 
 	aws autoscaling resume-processes --auto-scaling-group-name $ASG_NAME
-
-    # TODO Check and create CloudFront         
-    # TODO Check and create Alarms    
                
+    # ----- CREATE EC2 INSTANCES -----
    	# STEP=$((STEP+1))
     # echo "[$STEP/$STEPS] Creating EC2 instances..."        
     # CMD="aws ec2 run-instances --image-id $AMI --instance-type $INSTANCE_TYPE --count $EC2_MIN_INSTANCES --security-group-ids $SEC_GROUP_ID --region $REGION --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --ebs-optimized --user-data file://ec2-user-data.sh"
@@ -411,7 +478,7 @@ EOL
     # "InstanceId": "i-xxxxxxxx"
     # echo "$OUTPUT" >> "$LOG_FILE"
 	# 
-    # block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+    # search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     # for INSTANCE_ID in "${search_array[@]}"
     # do
 	#     echo "      Adding tag $TAG to new EC2 Instance Id: $INSTANCE_ID"
@@ -421,7 +488,7 @@ EOL
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
  
     i=0
-    block_search_array "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "      EC2 Instance: $INSTANCE_ID"
@@ -438,8 +505,6 @@ EOL
         sleep 5s
     done
 
-    echo
-
     if [ 5 -eq $times ]; then
         echo EC2 Instance $INSTANCE_ID is not running. Exiting...
         exit    
@@ -448,15 +513,12 @@ EOL
     OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
  
     i=0
-    block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+    search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "      EC2 Instance: $INSTANCE_ID [running]"
 	    i=$((i+1))
     done    
-
-	# TODO Create CloudWatch Alarms
-	# TODO Create CloudFront
 
     echo 
     echo "$i WordPress instances up and running."   
@@ -476,172 +538,161 @@ elif [[ $ACTION == "delete" ]]; then
         STEPS=9
         STEP=0
 
+        # ----- STOP AUTO SCALING -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Auto Scaling Group..."
     	OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
 
-    	ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
+    	ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
 		    echo "      Setting max instances to 0 for Auto Scaling Group \"$ASG\"..."     
-            CMD="aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 0 --min-size 0"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+            OUTPUT=$(run_cmd "aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 0 --min-size 0")
 		else
             echo "      No Auto Scaling Group found"        
 		fi
 
+        # ----- DELETE INSTANCES -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Auto Scaling Instances..."
     	OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
 
     	i=0
-    	block_search_array "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    	search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
     	for INSTANCE_ID in "${search_array[@]}"
     	do
 	    	# echo "      Detaching Auto Scaling Instance \"$INSTANCE_ID\"..."
-	        # CMD="aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --should-decrement-desired-capacity"
-    	  	# echo "$CMD" >> "$LOG_FILE"
-	    	# OUTPUT=$($CMD)
-            # echo "$OUTPUT" >> "$LOG_FILE"
+	        # OUTPUT=$(run_cmd "aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --should-decrement-desired-capacity")
 
 	    	echo "      Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
-	        CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
-	        #CMD="aws autoscaling terminate-instance-in-auto-scaling-group --instance-id $INSTANCE_ID --should-decrement-desired-capacity"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+	        OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
+	        #OUTPUT=$(run_cmd "aws autoscaling terminate-instance-in-auto-scaling-group --instance-id $INSTANCE_ID --should-decrement-desired-capacity")
 	   		i=$((i+1))
     	done    
  		echo "      $i Auto Scaling Instances deleted"  
 
+        # ----- DELETE LAUNCH CONFIGURATIONS -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Launch Configurations..."
     	OUTPUT=$(aws autoscaling describe-launch-configurations)
 
-	    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
+	    LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     	if [[ -n $LC ]]; then    
 		    echo "      Deleting Launch Configuration \"$LC\"..."     
-            CMD="aws autoscaling delete-launch-configuration --launch-configuration-name $LC_NAME"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+            OUTPUT=$(run_cmd "aws autoscaling delete-launch-configuration --launch-configuration-name $LC_NAME")
 		else
             echo "      No Launch Configurations found"        
 		fi
 
+        # ----- DELETE CLOUD WATCH -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching CloudWatch Alarms..."
 		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
 	
     	i=0
-    	block_search_array "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
+    	search_values "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
     	for ALARM_NAME in "${search_array[@]}"
     	do
 	  		echo "      Deleting CloudWatch Alarm \"$ALARM_NAME\"..."
-			CMD="aws cloudwatch delete-alarms --alarm-name $ALARM_NAME"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+			OUTPUT=$(run_cmd "aws cloudwatch delete-alarms --alarm-name $ALARM_NAME")
 	    	i=$((i+1))
     	done    
     
 		echo "      $i CloudWatch Alarms deleted"
 
+        # ----- DELETE AUTO SCALING GROUP -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Auto Scaling Group..."
     	OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
-
-    	ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
+    	ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
 		    echo "      Deleting Auto Scaling Group \"$ASG_NAME\"..."     
-            CMD="aws autoscaling delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME --force-delete"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+            OUTPUT=$(run_cmd "aws autoscaling delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME --force-delete")
 		else
             echo "      No Auto Scaling Group found"        
 		fi
 
+        # ----- DELETE EC2 INSTANCES -----
 	   	# STEP=$((STEP+1))
         # echo "[$STEP/$STEPS] Searching remaining EC2 instances..."
         # OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
  
  		# i=0
-        # block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+        # search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
         # for INSTANCE_ID in "${search_array[@]}"
         # do
         # 	# check if instance is already terminated
         # 	#"Name": "running"
-	    #     #STATE=$(block_search "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
+	    #     #STATE=$(search_value "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
         # 	
 	    #    echo "      Deleting EC2 Instance \"$INSTANCE_ID\"..."
-	    #    CMD="aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
-    	#    echo "$CMD" >> "$LOG_FILE"
-	    # 	 OUTPUT=$($CMD)
-        #    echo "$OUTPUT" >> "$LOG_FILE"
+	    #    OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
         #    i=$((i+1))
 	    # done 
  		# echo "      $i EC2 Instances deleted"  
 
+        # ----- DELETE ELB -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Elastic Loadbalancer..."
     	OUTPUT=$(aws elb describe-load-balancers)
 
-    	ELB=$(block_search "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
+    	ELB=$(search_value "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
     	if [[ -n $ELB ]]; then    
 		    echo "      Deleting Elastic Loadbalancer \"$ELB\"..."     
-            CMD="aws elb delete-load-balancer --load-balancer-name $ELB_NAME"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+            OUTPUT=$(run_cmd "aws elb delete-load-balancer --load-balancer-name $ELB_NAME")
 		else
             echo "      No Elastic Loadbalancer found"        
 		fi
 
+        # ----- DELETE RDS -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching RDS Database..."
         OUTPUT=$(aws rds describe-db-instances)
-        DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
+        DB=$(search_value "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
         if [[ -n $DB ]]; then
             echo "      Deleting RDS Database \"$DB\"..."
-            CMD="aws rds delete-db-instance --db-instance-identifier $DB_NAME --skip-final-snapshot"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+            OUTPUT=$(run_cmd "aws rds delete-db-instance --db-instance-identifier $DB_NAME --skip-final-snapshot")
         else
             echo "      No RDS Database found"        
         fi
 
+        # ----- DELETE S3 -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching S3 Bucket..."
         OUTPUT=$(aws s3api list-buckets)
 
-        S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
+        S3_BUCKET=$(search_value "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
         if [[ -n $S3_BUCKET ]]; then
 		    S3_URL=$(get_s3_url $S3_BUCKET_NAME)
             echo "      Deleting S3 Bucket \"$S3_URL\"..."
-            CMD="aws s3api delete-bucket --bucket $S3_BUCKET_NAME"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+            OUTPUT=$(run_cmd "aws s3api delete-bucket --bucket $S3_BUCKET_NAME")
         else
             echo "      No S3 Bucket found"        
         fi
 
+        # ----- DELETE CLOUD FRONT -----
 		# TODO Delete CloudFront
+        # enable AWC CLI preview mode for CloudFront Support
+        aws configure set preview.cloudfront true
+        OUTPUT=$(aws cloudfront list-distributions)
+        CF=$(get_value "$OUTPUT" "DomainName") 
+        if [[ -n $CF ]]; then
+            echo "      Deleting CLoud Front \"$CF\"..."
+            echo "      Not implemented yet!"
+            # TODO get-distribution-config
+            # TODO aws cloudfront update-distribution --id $CF_ID
+            # TODO aws cloudfront delete-distribution --id $CF_ID
+        fi
+        echo "      No Cloud Front found"        
 
+        # ----- DELETE SECURITY GROUP -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
 
-        SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
+        SEC_GROUP_ID=$(search_value "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
         if [[ -n $SEC_GROUP_ID ]]; then
             echo "      Deleting Security Group \"$SEC_GROUP_ID\"..."
-            CMD="aws ec2 delete-security-group --group-id $SEC_GROUP_ID"
-    	  	echo "$CMD" >> "$LOG_FILE"
-	    	OUTPUT=$($CMD)
-            echo "$OUTPUT" >> "$LOG_FILE"
+            OUTPUT=$(run_cmd "aws ec2 delete-security-group --group-id $SEC_GROUP_ID")
         else
             echo "      No Security Group found"        
         fi 
@@ -687,82 +738,94 @@ elif [[ $1 == "list" ]]; then
     echo "S3 Storage"
     echo "   S3 Bucket:                  $S3_BUCKET_NAME"
     echo
+    echo "WordPress"
+    echo "   WordPress Site Title:       $WORDPRESS_TITLE"
+    echo "   WordPress DB Prefix:        $WORDPRESS_DB_PREFIX"
+    echo "   WordPress Username:         $WORDPRESS_USER_NAME"
+    echo "   WordPress Password:         $WORDPRESS_USER_PASSWORD"
+    echo "   WordPress E-Mail:           $WORDPRESS_USER_EMAIL"
+    echo
+    echo "New Relic"
+    echo "   New Relic Name:             $NEWRELIC_NAME"
+    echo "   New Relic Key:              $NEWRELIC_KEY"
+    echo
     echo "Resources"
     echo "------------------------------------------------------"
 
+    # ----- LIST VPC -----
     OUTPUT=$(aws ec2 describe-security-groups)
-
-    # "GroupName": "WordPressScalerSecurityGroup",
-    # "GroupId": "sg-xxxxxxxx"    
-    # "VpcId": "vpc-xxxxxxxx"
-    # or returns "InvalidGroup.NotFound" if no security group found
-
-    VPC_ID=$(block_search "$OUTPUT" "VpcId" "GroupName" "$SEC_GROUP_NAME")
-    if [[ -n $VPC_ID ]]; then
-		echo "   VPC ID:                     $VPC_ID"
+    VPC_ID=$(search_value "$OUTPUT" "VpcId" "GroupName" "$SEC_GROUP_NAME")
+    if [[ -z $VPC_ID ]]; then
+        VPC_ID="none"
     fi
+	echo "   VPC ID:                     $VPC_ID"
 
-    SEC_GROUP_ID=$(block_search "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
-    if [[ -n $SEC_GROUP_ID ]]; then
-	    echo "   Security Group:             $SEC_GROUP_ID"
-	else
-	    echo "   Security Group:             none"
+    # ----- LIST SECURITY GROUP -----
+    SEC_GROUP_ID=$(search_value "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
+    if [[ -z $SEC_GROUP_ID ]]; then
+        SEC_GROUP_ID="none"
     fi
+	echo "   Security Group:             $SEC_GROUP_ID"
 
-	# TODO Show CloudFront    
-             
+    # ----- LIST CLOUD FRONT -----
+    # enable AWC CLI preview mode for CloudFront Support
+    aws configure set preview.cloudfront true
+    OUTPUT=$(aws cloudfront list-distributions)
+    CF=$(get_value "$OUTPUT" "DomainName") 
+    if [[ -z $CF ]]; then
+        CF="none"
+    fi
+    echo "   CloudFront:                 $CF"   
+
+    # ----- LIST S3 -----
     OUTPUT=$(aws s3api list-buckets)
-
-    S3_BUCKET=$(block_search "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
-    if [[ -n $S3_BUCKET ]]; then
+    S3_BUCKET=$(search_value "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
+    if [[ -z $S3_BUCKET ]]; then
+        S3_URL="none"
+    else
     	S3_URL=$(get_s3_url $S3_BUCKET_NAME)
-	    echo "   S3 Storage:                 $S3_URL"
-	else
-	    echo "   S3 Storage:                 none"
     fi 
+	echo "   S3 Storage:                 $S3_URL"
      
+    # ----- LIST RDS -----
     OUTPUT=$(aws rds describe-db-instances)
-
-    DB=$(block_search "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
-    if [[ -n $DB ]]; then
-    	OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
-    	DB=$(block_search "$OUTPUT" "Address" "Port" "3306")
-	    echo "   RDS Database:               $DB"
+    DB=$(search_value "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
+    if [[ -z $DB ]]; then
+	    DB="none"
 	else
-	    echo "   RDS Database:               none"
+    	OUTPUT=$(aws rds describe-db-instances --db-instance-identifier $DB_NAME)
+    	DB=$(search_value "$OUTPUT" "Address" "Port" "3306")
     fi
+	echo "   RDS Database:               $DB"
 
+    # ----- LIST ELB -----
     OUTPUT=$(aws elb describe-load-balancers)
-
-    ELB=$(block_search "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
-    if [[ -n $ELB ]]; then    
-    	echo "   Elastic Loadbalancer:       $ELB" 
-    else   
-    	echo "   Elastic Loadbalancer:       none"    
+    ELB=$(search_value "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
+    if [[ -z $ELB ]]; then    
+        ELB="none"    
     fi
+    echo "   Elastic Loadbalancer:       $ELB" 
  
+    # ----- LIST LAUNCH CONFIGURATION -----
     OUTPUT=$(aws autoscaling describe-launch-configurations)
-
-    LC=$(block_search "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
-    if [[ -n $LC ]]; then    
-    	echo "   Launch Configurations:      $LC" 
-    else   
-    	echo "   Launch Configurations:      none"    
+    LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
+    if [[ -z $LC ]]; then    
+    	LC="none"    
     fi
+    echo "   Launch Configurations:      $LC" 
        
+    # ----- LIST AUTO-SCALING-GROUP -----
     OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
-
-    ASG=$(block_search "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
-    if [[ -n $ASG ]]; then    
-    	echo "   Auto Scaling Group:         $ASG" 
-    else   
-    	echo "   Auto Scaling Group:         none"    
+    ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
+    if [[ -z $ASG ]]; then   
+         ASG="none"
     fi
+    echo "   Auto Scaling Group:         $ASG" 
     
-	OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
-	
+    # ----- LIST CLOUD WATCH -----
+	OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)	
     i=0
-    block_search_array "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
+    search_values "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
     for ALARM_NAME in "${search_array[@]}"
     do
 	    echo "   CloudWatch Alarm:           $ALARM_NAME"
@@ -771,10 +834,10 @@ elif [[ $1 == "list" ]]; then
     
 	echo "   CloudWatch Alarms:          $i" 
 	
+    # ----- LIST INSTANCES -----
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
- 
     i=0
-    block_search_array "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "   Auto Scaling Instance:      $INSTANCE_ID"
@@ -783,10 +846,11 @@ elif [[ $1 == "list" ]]; then
     
 	echo "   Auto Scaling Instances:     $i" 
 	    
+    # ----- LIST EC2 INSTANCES -----
     # OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
     #
     # i=0
-    # block_search_array "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+    # search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     # for INSTANCE_ID in "${search_array[@]}"
     # do
 	#     echo "   EC2 Instance:               $INSTANCE_ID"
@@ -801,9 +865,8 @@ elif [[ $1 == "list" ]]; then
 # Print console output of first EC2 instance found.
 elif [[ $1 == "console" ]]; then
 
-    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
- 
-    INSTANCE_ID=$(block_search "$OUTPUT" "InstanceId" "ImageId" "$AMI")
+    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG") 
+    INSTANCE_ID=$(search_value "$OUTPUT" "InstanceId" "ImageId" "$AMI")
     if [[ -n $INSTANCE_ID ]]; then
 	    OUTPUT=$(aws ec2 get-console-output --instance-id $INSTANCE_ID)
 	    echo $OUTPUT
