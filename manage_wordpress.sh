@@ -405,7 +405,7 @@ if [[ $ACTION == "create" ]]; then
 cat >ec2-user-data.sh <<EOL
 #!/bin/bash
 docker pull janloeffler/wordpress-aws-scaler:latest
-docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='${WORDPRESS_DB_PREFIX}' -e WORDPRESS_URL='http://${ELB}' -e WORDPRESS_TITLE='${WORDPRESS_TITLE}' -e WORDPRESS_USER_EMAIL='${WORDPRESS_USER_EMAIL}' -e NEWRELIC_KEY='${NEWRELIC_KEY}' -e NEWRELIC_NAME='${NEWRELIC_NAME}' -e S3_BUCKET='${S3_URL}' -it janloeffler/wordpress-aws-scaler:latest
+docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='${WORDPRESS_DB_PREFIX}' -e WORDPRESS_URL='http://${ELB}' -e WORDPRESS_TITLE='${WORDPRESS_TITLE}' -e WORDPRESS_USER_EMAIL='${WORDPRESS_USER_EMAIL}' -e NEWRELIC_KEY='${NEWRELIC_KEY}' -e NEWRELIC_NAME='${NEWRELIC_NAME}' -e S3_KEY='${IAM_USER_KEY}' -e S3_SECRET='${IAM_USER_SECRET}' -e S3_BUCKET='${S3_BUCKET_NAME}' -e S3_BUCKET_URL='${S3_URL}' -it janloeffler/wordpress-aws-scaler:latest
 EOL
 
     cat ec2-user-data.sh >> "$LOG_FILE"         
