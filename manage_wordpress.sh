@@ -183,7 +183,7 @@ fi
 
 # if TAG was not passed from CLI, fetch it from settings file or use default
 if [[ -z $TAG ]]; then
-	TAG=$(get_config "pleskwp" TAG "pleskwp")
+    TAG="pleskwp"
 fi
 
 TAG=$(get_valid_id "$TAG")
@@ -380,6 +380,7 @@ if [[ $ACTION == "create" ]]; then
 	
 	    if [[ -z $DB ]]; then
 	        echo "      Database $DB_NAME is not running. Please wait a minute and re-run create!"
+            echo
 	        exit    
 	    fi
 	fi
@@ -407,22 +408,6 @@ if [[ $ACTION == "create" ]]; then
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Generating EC2 User Data script..."                       
 
-cat >ec2-user-data.sh <<EOL
-#!/bin/bash
-docker pull janloeffler/wordpress-aws-scaler:latest
-docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='${WORDPRESS_DB_PREFIX}' -e WORDPRESS_URL='http://${ELB}' -e WORDPRESS_TITLE='${WORDPRESS_TITLE}' -e WORDPRESS_USER_EMAIL='${WORDPRESS_USER_EMAIL}' -e NEWRELIC_KEY='${NEWRELIC_KEY}' -e NEWRELIC_NAME='${NEWRELIC_NAME}' -e S3_KEY='${IAM_USER_KEY}' -e S3_SECRET='${IAM_USER_SECRET}' -e S3_BUCKET='${S3_BUCKET_NAME}' -e S3_BUCKET_URL='${S3_URL}' -it janloeffler/wordpress-aws-scaler:latest
-EOL
-
-    cat ec2-user-data.sh >> "$LOG_FILE"         
-
-    # TODO check whether we can write docker parameters to a file and load it from there instead of a very long command
-    # --> docker-compose
-
-    # -e S3_SECRET='${S3_SECRET}'
-    # -e S3_KEY='${S3_KEY}'
-    # -e WORDPRESS_USER_NAME='${WORDPRESS_USER_NAMEXXX}'
-    # -e WORDPRESS_USER_PASSWORD='${WORDPRESS_USER_PASSWORD}'
-
 	# parameters used by Docker script
 	# S3_KEY
 	# S3_SECRET
@@ -436,6 +421,17 @@ EOL
 	# WORDPRESS_USER_PASSWORD
 	# WORDPRESS_USER_EMAIL
 
+cat >ec2-user-data.sh <<EOL
+#!/bin/bash
+docker pull janloeffler/wordpress-aws-scaler:latest
+docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='${WORDPRESS_DB_PREFIX}' -e WORDPRESS_URL='http://${ELB}' -e WORDPRESS_TITLE='${WORDPRESS_TITLE}' -e WORDPRESS_USER_EMAIL='${WORDPRESS_USER_EMAIL}' -e NEWRELIC_KEY='${NEWRELIC_KEY}' -e NEWRELIC_NAME='${NEWRELIC_NAME}' -e S3_KEY='${IAM_USER_KEY}' -e S3_SECRET='${IAM_USER_SECRET}' -e S3_BUCKET='${S3_BUCKET_NAME}' -e S3_BUCKET_URL='${S3_URL}' -it janloeffler/wordpress-aws-scaler:latest
+EOL
+
+    cat ec2-user-data.sh >> "$LOG_FILE"         
+
+    # TODO check whether we can write docker parameters to a file and load it from there instead of a very long command
+    # --> docker-compose
+
    	# ----- CREATE LAUNCH CONFIGURATIONS -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Launch Configuration..."
@@ -448,7 +444,7 @@ EOL
         KEYNAME=$(get_value "$OUTPUT" "KeyName" "IsDefault" "none")
 
     	echo "      Creating Launch Configuration"
-   	 	CMD="aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --key-name $KEYNAME --security-groups $SEC_GROUP_ID --block-device-mappings [{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}] --ebs-optimized --user-data file://ec2-user-data.sh"
+   	 	CMD="aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --key-name $KEYNAME --security-groups $SEC_GROUP_ID --user-data file://ec2-user-data.sh"
       	echo "$CMD" >> "$LOG_FILE"
    	 	#OUTPUT=$(aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --security-groups $SEC_GROUP_ID --block-device-mappings "[{\"VirtualName\":\"$DEVICE_NAME\",\"DeviceName\":\"/dev/sdb\",\"Ebs\":{\"VolumeSize\":10,\"DeleteOnTermination\":true}}]" --ebs-optimized --user-data file://ec2-user-data.sh)
    	 	OUTPUT=$(aws autoscaling create-launch-configuration --launch-configuration-name $LC_NAME --image-id $AMI --instance-type $INSTANCE_TYPE --key-name $KEYNAME --security-groups $SEC_GROUP_ID --user-data file://ec2-user-data.sh)
@@ -544,6 +540,7 @@ EOL
 
     if [ 5 -eq $times ]; then
         echo EC2 Instance $INSTANCE_ID is not running. Exiting...
+        echo
         exit    
     fi
 
@@ -559,6 +556,102 @@ EOL
 
     echo 
     echo "$i WordPress instances up and running."   
+    echo 
+
+# ----------- UPDATE -----------
+# Update WordPress by replacing all ec2 instances in your AWS account via AWS CLI.
+elif [[ $ACTION == "update" ]]; then
+    echo "----- UPDATE WORDPRESS -----" >> "$LOG_FILE"
+    STEP=0
+    STEPS=4
+
+   	# ----- CHECK LAUNCH CONFIGURATIONS -----
+   	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Launch Configuration..."
+    OUTPUT=$(aws autoscaling describe-launch-configurations)
+
+    LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
+    if [[ -z $LC ]]; then
+        echo "      ERROR: No Launch Configuration found. Please use \"manage-wordpress create\" instead."
+        echo
+        exit
+    fi
+    echo "      Launch Configuration: $LC" 
+
+   	# ----- CHECK AUTO SCALING GROUPS -----
+    STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Auto Scaling Group..."
+    OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
+
+    ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
+    if [[ -z $ASG ]]; then    
+        echo "      ERROR: No Auto Scaling Group found. Please use \"manage-wordpress create\" instead."
+        echo
+        exit  
+    fi
+    echo "      Auto Scaling Group: $ASG" 
+
+   	# ----- DELETE EC2 INSTANCES IN AUTO SCALING GROUP -----
+    STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Searching Auto Scaling Instances..."
+    OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
+
+    i=0
+    search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    for INSTANCE_ID in "${search_array[@]}"
+    do
+        echo "      Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
+        OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
+        i=$((i+1))
+    done    
+    echo "      $i Auto Scaling Instances deleted" 
+
+    sleep 10s
+
+   	# ----- CREATE EC2 INSTANCES IN AUTO SCALING GROUP -----
+    STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Creating new Auto Scaling Instances..."
+
+	aws autoscaling resume-processes --auto-scaling-group-name $ASG_NAME
+               
+    OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
+ 
+    i=0
+    search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    for INSTANCE_ID in "${search_array[@]}"
+    do
+	    echo "      EC2 Instance: $INSTANCE_ID"
+	    i=$((i+1))
+    done    
+
+    echo
+
+    times=0
+    while [ 5 -gt $times ] && [[ -z $(aws ec2 describe-instances --instance-id $INSTANCE_ID --filters "Name=instance-state-code,Values=16" | grep "running") ]]
+    do
+        times=$(( $times + 1 ))
+        echo Check if $INSTANCE_ID is running [$times]...
+        sleep 5s
+    done
+
+    if [ 5 -eq $times ]; then
+        echo EC2 Instance $INSTANCE_ID is not running. Exiting...
+        echo
+        exit    
+    fi
+
+    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG" "Name=instance-state-name,Values=running")
+ 
+    i=0
+    search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
+    for INSTANCE_ID in "${search_array[@]}"
+    do
+	    echo "      EC2 Instance: $INSTANCE_ID [running]"
+	    i=$((i+1))
+    done    
+
+    echo 
+    echo "$i WordPress instances updated and up and running again."   
     echo 
 
 # ----------- DELETE -----------
@@ -797,7 +890,7 @@ elif [[ $1 == "list" ]]; then
         if [[ -z $ZONE_ID ]]; then
             ZONE_ID="none"
         fi
-        echo "   Hosted Zone:            $ZONE_ID ($DOMAIN_NAME)"
+        echo "   Hosted Zone:                $ZONE_ID ($DOMAIN_NAME)"
     fi
 
     # ----- LIST VPC -----
@@ -928,14 +1021,12 @@ elif [[ $1 == "console" ]]; then
 # Create a new config file with as TAG.ini.
 elif [[ $1 == "config" ]]; then
 
-    # INI_FILE="$TAG.ini"
-    INI_FILE="pleskwp.ini"
+    INI_FILE="$TAG.ini"
     echo "Creating file $INI_FILE ..."
     echo
 
 # has to be replaced with $INI_FILE, but "cat >$INI_FILE <<EOL" does not work"
 # cat >pleskwp.cfg <<EOL
-# TAG '${TAG}'
 # AMI '${AMI}'
 # REGION '${REGION}'
 # INSTANCE_TYPE '${INSTANCE_TYPE}'
@@ -967,6 +1058,7 @@ else
     echo
     echo "Commands:"
     echo "   manage_wordpress.sh create  [TAG]      Create a new WordPress in your AWS account via AWS CLI."
+    echo "   manage_wordpress.sh update  [TAG]      Recreate all EC2 instances with latest Docker image but keep RDS, S3, etc. as they are."
     echo "   manage_wordpress.sh delete  [TAG]      Delete the WordPress incl. database etc BE CAREFUL - this deletes all that the script created before."
     echo "   manage_wordpress.sh list    [TAG]      List settings and WordPress instances."
     echo "   manage_wordpress.sh console [TAG]      Print console output of first EC2 instance found."
