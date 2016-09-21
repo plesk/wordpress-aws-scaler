@@ -20,6 +20,11 @@ if [[ -z "$WORDPRESS_DB_HOST" || -z "$WORDPRESS_DB_USER" || -z "$WORDPRESS_DB_PA
 	exit 1
 fi
 
+if [ `find /usr/src/wordpress -prune -empty` ]; then
+	echo >&2 'Downloading WordPress'
+	wp core download --allow-root
+fi
+
 if [ ! -f /usr/src/wordpress/wp-config.php ]; then
 	if [[ -n "$S3_KEY" && -n "$S3_SECRET" ]]; then
 		S3_ENABLED=true
