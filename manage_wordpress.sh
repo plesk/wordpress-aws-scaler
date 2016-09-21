@@ -515,7 +515,7 @@ EOL
         exit    
     fi
 
-    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
+    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG" "Name=instance-state-name,Values=running")
  
     i=0
     search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
@@ -870,7 +870,7 @@ elif [[ $1 == "list" ]]; then
 # Print console output of first EC2 instance found.
 elif [[ $1 == "console" ]]; then
 
-    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG") 
+    OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG" "Name=instance-state-name,Values=running") 
     INSTANCE_ID=$(search_value "$OUTPUT" "InstanceId" "ImageId" "$AMI")
     if [[ -n $INSTANCE_ID ]]; then
 	    OUTPUT=$(aws ec2 get-console-output --instance-id $INSTANCE_ID)
