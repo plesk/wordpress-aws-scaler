@@ -227,6 +227,9 @@ WORDPRESS_USER_NAME=$(get_config "$TAG" WORDPRESS_USER_NAME "wordpress")
 WORDPRESS_USER_PASSWORD=$(get_config "$TAG" WORDPRESS_USER_PASSWORD "xWH44tVfAoAqJx")
 WORDPRESS_USER_EMAIL=$(get_config "$TAG" WORDPRESS_USER_EMAIL "jan@plesk.com")
 
+IAM_USER=$(get_config "$TAG" IAM_USER "$TAG")
+IAM_USER_CREDENTIALS="$TAG-credentials.log"
+
 # remove _ characters in names
 DB_USERNAME=$(get_valid_id "$DB_USERNAME")
 DB_NAME=$(get_valid_id "$DB_NAME")
@@ -238,8 +241,8 @@ S3_BUCKET_NAME=$(get_valid_id "$S3_BUCKET_NAME")
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     STEP=0
-    STEPS=10
-    
+    STEPS=11
+
    	# ----- CREATE VPC -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check VPC..."
@@ -275,6 +278,30 @@ if [[ $ACTION == "create" ]]; then
     fi
     echo "      Security Group Id: $SEC_GROUP_ID"        
 
+    # ----- CREATE IAM USER -----
+    STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check IAM USER..."
+    OUTPUT=$(aws iam list-users)
+
+    HAS_USER=$(search_value "$OUTPUT" "UserName" "UserName" "$IAM_USER")
+    if [[ -z $HAS_USER ]]; then
+        echo "      Creating IAM User..."
+        OUTPUT=$(run_cmd "aws iam create-user --user-name $IAM_USER")
+
+        echo "      Creating IAM User..."
+        CREDENTIALS=$(run_cmd "aws iam create-access-key --user-name $IAM_USER")
+        IAM_USER_KEY=$(get_value "$CREDENTIALS" "AccessKeyId")
+        IAM_USER_SECRET=$(get_value "$CREDENTIALS" "SecretAccessKey")
+
+        echo "$IAM_USER_ACCESS" >> "$IAM_USER_CREDENTIALS"
+        echo "$IAM_USER_SECRET" >> "$IAM_USER_CREDENTIALS"
+    else
+        echo "      Getting IAM User credentials..."
+        IAM_USER_KEY=$(head -n 1 $IAM_USER_CREDENTIALS)
+        IAM_USER_SECRET=$(sed '2q;d' $IAM_USER_CREDENTIALS)
+    fi
+    echo "      IAM USER: $IAM_USER"
+
    	# ----- CREATE S3 -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check S3 Bucket..."
@@ -290,24 +317,28 @@ if [[ $ACTION == "create" ]]; then
         fi
     fi
     S3_URL=$(get_s3_url $S3_BUCKET_NAME)
-    echo "      S3 Storage: $S3_URL"        
+    echo "      S3 Storage: $S3_URL"
 
-    # TODO Check and create CloudFront  
-           
+    # TODO Check and create CloudFront
+
    	# ----- CREATE CLOUD FRONT -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Cloud Front..."
     # enable AWC CLI preview mode for CloudFront Support
     aws configure set preview.cloudfront true
     OUTPUT=$(aws cloudfront list-distributions)
-    CF=$(get_value "$OUTPUT" "DomainName") 
+    CF=$(get_value "$OUTPUT" "DomainName")
     if [[ -z $CF ]]; then
         echo "      Creating Cloud Front..."
         echo "      Not implemented yet!"
-        # TODO OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_BUCKET_NAME.s3.amazonaws.com")
+        OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_URL")
+        CF=$(get_value "$OUTPUT" "DomainName")
+
+        #overwrite S3_URL so that WordPress loads assets over Cloudfront
+        S3_URL=$CF
     fi
-    echo "      Cloud Front: $CF"        
-	               
+    echo "      Cloud Front: $CF"
+
    	# ----- CREATE RDS -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check RDS Database..."
@@ -379,7 +410,7 @@ if [[ $ACTION == "create" ]]; then
 cat >ec2-user-data.sh <<EOL
 #!/bin/bash
 docker pull janloeffler/wordpress-aws-scaler:latest
-docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='${WORDPRESS_DB_PREFIX}' -e WORDPRESS_URL='http://${ELB}' -e WORDPRESS_TITLE='${WORDPRESS_TITLE}' -e WORDPRESS_USER_EMAIL='${WORDPRESS_USER_EMAIL}' -e NEWRELIC_KEY='${NEWRELIC_KEY}' -e NEWRELIC_NAME='${NEWRELIC_NAME}' -e S3_BUCKET='${S3_URL}' -it janloeffler/wordpress-aws-scaler:latest
+docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='${DB}' -e WORDPRESS_DB_USER='${DB_USERNAME}' -e WORDPRESS_DB_PASSWORD='${DB_PASSWORD}' -e WORDPRESS_DB_NAME='${DB_NAME}' -e WORDPRESS_DB_PREFIX='${WORDPRESS_DB_PREFIX}' -e WORDPRESS_URL='http://${ELB}' -e WORDPRESS_TITLE='${WORDPRESS_TITLE}' -e WORDPRESS_USER_EMAIL='${WORDPRESS_USER_EMAIL}' -e NEWRELIC_KEY='${NEWRELIC_KEY}' -e NEWRELIC_NAME='${NEWRELIC_NAME}' -e S3_KEY='${IAM_USER_KEY}' -e S3_SECRET='${IAM_USER_SECRET}' -e S3_BUCKET='${S3_BUCKET_NAME}' -e S3_BUCKET_URL='${S3_URL}' -it janloeffler/wordpress-aws-scaler:latest
 EOL
 
     cat ec2-user-data.sh >> "$LOG_FILE"         

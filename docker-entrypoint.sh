@@ -20,6 +20,11 @@ if [[ -z "$WORDPRESS_DB_HOST" || -z "$WORDPRESS_DB_USER" || -z "$WORDPRESS_DB_PA
 	exit 1
 fi
 
+if [ `find /usr/src/wordpress -prune -empty` ]; then
+	echo >&2 'Downloading WordPress'
+	wp core download --allow-root
+fi
+
 if [ ! -f /usr/src/wordpress/wp-config.php ]; then
 	if [[ -n "$S3_KEY" && -n "$S3_SECRET" ]]; then
 		S3_ENABLED=true
@@ -30,6 +35,12 @@ define( 'S3_UPLOADS_KEY', '$S3_KEY' );
 define( 'S3_UPLOADS_SECRET', '$S3_SECRET' );
 define( 'S3_UPLOADS_REGION', '$S3_REGION' ); // the s3 bucket region, required for Frankfurt and Beijing.
 PHP
+
+		if [[ -n "$S3_BUCKET_URL" ]]; then
+			extra="$extra
+define( 'S3_UPLOADS_BUCKET_URL', '$S3_BUCKET_URL' );"
+		fi
+
 	fi
 
 	
