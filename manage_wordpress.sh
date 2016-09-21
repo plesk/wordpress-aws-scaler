@@ -330,7 +330,7 @@ if [[ $ACTION == "create" ]]; then
     CF=$(get_value "$OUTPUT" "DomainName")
     if [[ -z $CF ]]; then
         echo "      Creating Cloud Front..."
-        OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_URL")
+        OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_BUCKET_NAME.s3.amazonaws.com")
         CF=$(get_value "$OUTPUT" "DomainName")
 
         #overwrite S3_URL so that WordPress loads assets over Cloudfront
