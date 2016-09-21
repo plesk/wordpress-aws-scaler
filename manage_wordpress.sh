@@ -226,6 +226,9 @@ WORDPRESS_USER_NAME=$(get_config "$TAG" WORDPRESS_USER_NAME "wordpress")
 WORDPRESS_USER_PASSWORD=$(get_config "$TAG" WORDPRESS_USER_PASSWORD "xWH44tVfAoAqJx")
 WORDPRESS_USER_EMAIL=$(get_config "$TAG" WORDPRESS_USER_EMAIL "jan@plesk.com")
 
+IAM_USER=$(get_config "$TAG" IAM_USER "$TAG")
+IAM_USER_CREDENTIALS="$TAG-credentials.log"
+
 # remove _ characters in names
 DB_USERNAME=$(get_valid_id "$DB_USERNAME")
 DB_NAME=$(get_valid_id "$DB_NAME")
@@ -237,8 +240,8 @@ S3_BUCKET_NAME=$(get_valid_id "$S3_BUCKET_NAME")
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     STEP=0
-    STEPS=10
-    
+    STEPS=11
+
    	# ----- CREATE VPC -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check VPC..."
@@ -273,6 +276,30 @@ if [[ $ACTION == "create" ]]; then
 		aws ec2 authorize-security-group-ingress --group-id $SEC_GROUP_ID --protocol tcp --port 3306 --cidr 0.0.0.0/0                
     fi
     echo "      Security Group Id: $SEC_GROUP_ID"        
+
+    # ----- CREATE IAM USER -----
+    STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check IAM USER..."
+    OUTPUT=$(aws iam list-users)
+
+    HAS_USER=$(search_value "$OUTPUT" "UserName" "UserName" "$IAM_USER")
+    if [[ -z $HAS_USER ]]; then
+        echo "      Creating IAM User..."
+        OUTPUT=$(run_cmd "aws iam create-user --user-name $IAM_USER")
+
+        echo "      Creating IAM User..."
+        CREDENTIALS=$(run_cmd "aws iam create-access-key --user-name $IAM_USER")
+        IAM_USER_KEY=$(get_value "$CREDENTIALS" "AccessKeyId")
+        IAM_USER_SECRET=$(get_value "$CREDENTIALS" "SecretAccessKey")
+
+        echo "$IAM_USER_ACCESS" >> "$IAM_USER_CREDENTIALS"
+        echo "$IAM_USER_SECRET" >> "$IAM_USER_CREDENTIALS"
+    else
+        echo "      Getting IAM User credentials..."
+        IAM_USER_KEY=$(head -n 1 $IAM_USER_CREDENTIALS)
+        IAM_USER_SECRET=$(sed '2q;d' $IAM_USER_CREDENTIALS)
+    fi
+    echo "      IAM USER: $IAM_USER"
 
    	# ----- CREATE S3 -----
    	STEP=$((STEP+1))
