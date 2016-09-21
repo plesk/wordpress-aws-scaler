@@ -1,0 +1,3 @@
+#!/bin/bash
+docker pull janloeffler/wordpress-aws-scaler:latest
+docker run -d -p 80:80 -p 443:443 -e WORDPRESS_DB_HOST='pleskwp.c0sj1sa6qp6d.eu-west-1.rds.amazonaws.com' -e WORDPRESS_DB_USER='wordpress' -e WORDPRESS_DB_PASSWORD='xWH44tVfAoAqJx' -e WORDPRESS_DB_NAME='pleskwp' -e WORDPRESS_DB_PREFIX='wp_' -e WORDPRESS_URL='http://pleskwp-709685267.eu-west-1.elb.amazonaws.com' -e WORDPRESS_TITLE='WordPress Scaled on AWS' -e WORDPRESS_USER_EMAIL='jan@plesk.com' -e NEWRELIC_KEY='22660887228aa6e487fab34c408663dff6dc2c50' -e NEWRELIC_NAME='wpscale' -e S3_KEY='' -e S3_SECRET='b1j+FASrDvk3hfBaxnvGRGezF16JSLfoCq8Uxusm' -e S3_BUCKET='pleskwp' -e S3_BUCKET_URL='' -it janloeffler/wordpress-aws-scaler:latest

@@ -310,7 +310,7 @@ if [[ $ACTION == "create" ]]; then
     S3_BUCKET=$(search_value "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
     if [[ -z $S3_BUCKET ]]; then
         echo "      Creating S3 Bucket..."
-        OUTPUT=$(run_cmd "aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION")
+        OUTPUT=$(run_cmd "aws s3api create-bucket --bucket $S3_BUCKET_NAME --region $REGION --acl public-read --create-bucket-configuration LocationConstraint=$REGION")
         S3_BUCKET=$(get_value "$OUTPUT" "Location")    
         if [[ -n $S3_BUCKET ]]; then
         	aws s3api put-bucket-tagging --bucket $S3_BUCKET_NAME --tagging TagSet="[{Key=Name,Value=$TAG}]"
@@ -330,7 +330,6 @@ if [[ $ACTION == "create" ]]; then
     CF=$(get_value "$OUTPUT" "DomainName")
     if [[ -z $CF ]]; then
         echo "      Creating Cloud Front..."
-        echo "      Not implemented yet!"
         OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_URL")
         CF=$(get_value "$OUTPUT" "DomainName")
 
