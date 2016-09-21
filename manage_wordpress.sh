@@ -288,12 +288,12 @@ if [[ $ACTION == "create" ]]; then
         echo "      Creating IAM User..."
         OUTPUT=$(run_cmd "aws iam create-user --user-name $IAM_USER")
 
-        echo "      Creating IAM User..."
+        echo "      Creating IAM User Credentials..."
         CREDENTIALS=$(run_cmd "aws iam create-access-key --user-name $IAM_USER")
         IAM_USER_KEY=$(get_value "$CREDENTIALS" "AccessKeyId")
         IAM_USER_SECRET=$(get_value "$CREDENTIALS" "SecretAccessKey")
 
-        echo "$IAM_USER_ACCESS" >> "$IAM_USER_CREDENTIALS"
+        echo "$IAM_USER_KEY" >> "$IAM_USER_CREDENTIALS"
         echo "$IAM_USER_SECRET" >> "$IAM_USER_CREDENTIALS"
     else
         echo "      Getting IAM User credentials..."
