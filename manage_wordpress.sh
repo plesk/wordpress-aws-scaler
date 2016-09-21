@@ -384,6 +384,7 @@ EOL
     cat ec2-user-data.sh >> "$LOG_FILE"         
 
     # TODO check whether we can write docker parameters to a file and load it from there instead of a very long command
+    # --> docker-compose
 
     # -e S3_SECRET='${S3_SECRET}'
     # -e S3_KEY='${S3_KEY}'
