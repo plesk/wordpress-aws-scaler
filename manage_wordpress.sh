@@ -316,24 +316,28 @@ if [[ $ACTION == "create" ]]; then
         fi
     fi
     S3_URL=$(get_s3_url $S3_BUCKET_NAME)
-    echo "      S3 Storage: $S3_URL"        
+    echo "      S3 Storage: $S3_URL"
 
-    # TODO Check and create CloudFront  
-           
+    # TODO Check and create CloudFront
+
    	# ----- CREATE CLOUD FRONT -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Cloud Front..."
     # enable AWC CLI preview mode for CloudFront Support
     aws configure set preview.cloudfront true
     OUTPUT=$(aws cloudfront list-distributions)
-    CF=$(get_value "$OUTPUT" "DomainName") 
+    CF=$(get_value "$OUTPUT" "DomainName")
     if [[ -z $CF ]]; then
         echo "      Creating Cloud Front..."
         echo "      Not implemented yet!"
-        # TODO OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_BUCKET_NAME.s3.amazonaws.com")
+        OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_URL")
+        CF=$(get_value "$OUTPUT" "DomainName")
+
+        #overwrite S3_URL so that WordPress loads assets over Cloudfront
+        S3_URL=$CF
     fi
-    echo "      Cloud Front: $CF"        
-	               
+    echo "      Cloud Front: $CF"
+
    	# ----- CREATE RDS -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check RDS Database..."
