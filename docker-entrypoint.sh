@@ -35,6 +35,12 @@ define( 'S3_UPLOADS_KEY', '$S3_KEY' );
 define( 'S3_UPLOADS_SECRET', '$S3_SECRET' );
 define( 'S3_UPLOADS_REGION', '$S3_REGION' ); // the s3 bucket region, required for Frankfurt and Beijing.
 PHP
+
+		if [[ -n "$S3_BUCKET_URL" ]]; then
+			extra="$extra
+define( 'S3_UPLOADS_BUCKET_URL', '$S3_BUCKET_URL' );"
+		fi
+
 	fi
 
 	
