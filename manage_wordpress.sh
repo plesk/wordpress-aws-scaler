@@ -503,7 +503,7 @@ EOL
     echo
 
     times=0
-    while [ 5 -gt $times ] && [[ -z $(aws ec2 describe-instances --instance-id $INSTANCE_ID | grep "running") ]]
+    while [ 5 -gt $times ] && [[ -z $(aws ec2 describe-instances --instance-id $INSTANCE_ID --filters "Name=instance-state-code,Values=16" | grep "running") ]]
     do
         times=$(( $times + 1 ))
         echo Check if $INSTANCE_ID is running [$times]...
