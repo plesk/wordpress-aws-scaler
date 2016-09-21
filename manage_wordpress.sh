@@ -183,7 +183,7 @@ fi
 
 # if TAG was not passed from CLI, fetch it from settings file or use default
 if [[ -z $TAG ]]; then
-	TAG=$(get_config "manage_wordpress" TAG "pleskwp")
+	TAG=$(get_config "pleskwp" TAG "pleskwp")
 fi
 
 TAG=$(get_valid_id "$TAG")
@@ -218,6 +218,7 @@ ASG_NAME=$(get_config "$TAG" ASG_NAME "$TAG")
 LC_NAME=$(get_config "$TAG" LC_NAME "$TAG")
 S3_BUCKET_NAME=$(get_config "$TAG" S3_BUCKET_NAME "$TAG")
 
+DOMAIN_NAME=$(get_config "$TAG" DOMAIN_NAME "")
 NEWRELIC_KEY=$(get_config "$TAG" NEWRELIC_KEY "")
 NEWRELIC_NAME=$(get_config "$TAG" NEWRELIC_NAME "$TAG")
 WORDPRESS_TITLE=$(get_config "$TAG" WORDPRESS_TITLE "WordPress scaled on AWS")
@@ -715,10 +716,11 @@ elif [[ $1 == "list" ]]; then
     echo "------------------------------------------------------"
     echo "Tag:                           $TAG "
 	echo
-    echo "Network"
+    echo "Network & Domains"
     echo "   Security Group Name:        $SEC_GROUP_NAME"
     echo "   Security Group Description: $SEC_GROUP_DESC"
-    echo "   VPC IP Block:               $VPC_IP_BLOCK "
+    echo "   VPC IP Block:               $VPC_IP_BLOCK"
+    echo "   Domain:                     $DOMAIN_NAME"
 	echo 
     echo "EC2 Instances"
     echo "   Instance Type:              $INSTANCE_TYPE"
@@ -756,6 +758,16 @@ elif [[ $1 == "list" ]]; then
     echo
     echo "Resources"
     echo "------------------------------------------------------"
+
+    # ----- LIST DOMAIN -----
+    if [[ -n $DOMAIN_NAME ]]; then
+        OUTPUT=$(aws route53 list-hosted-zones)
+        ZONE_ID=$(search_value "$OUTPUT" "Id" "Name" "$DOMAIN_NAME.")
+        if [[ -z $ZONE_ID ]]; then
+            ZONE_ID="none"
+        fi
+        echo "   Hosted Zone:            $ZONE_ID ($DOMAIN_NAME)"
+    fi
 
     # ----- LIST VPC -----
     OUTPUT=$(aws ec2 describe-security-groups)
@@ -881,15 +893,56 @@ elif [[ $1 == "console" ]]; then
     
 	echo    
     
+# ----------- CONFIG -----------
+# Create a new config file with as TAG.ini.
+elif [[ $1 == "config" ]]; then
+
+    # INI_FILE="$TAG.ini"
+    INI_FILE="pleskwp.ini"
+    echo "Creating file $INI_FILE ..."
+    echo
+
+# has to be replaced with $INI_FILE, but "cat >$INI_FILE <<EOL" does not work"
+# cat >pleskwp.cfg <<EOL
+# TAG '${TAG}'
+# AMI '${AMI}'
+# REGION '${REGION}'
+# INSTANCE_TYPE '${INSTANCE_TYPE}'
+# VPC_IP_BLOCK '${VPC_IP_BLOCK}'
+# DB_INSTANCE_TYPE '${DB_INSTANCE_TYPE}'
+# DB_ENGINE '${DB_ENGINE}'
+# DB_USERNAME '${DB_USERNAME}'
+# DB_PASSWORD '${DB_PASSWORD}'
+# EC2_MIN_INSTANCES '${EC2_MIN_INSTANCES}'
+# NEWRELIC_KEY '${NEWRELIC_KEY}'
+# NEWRELIC_NAME '${NEWRELIC_NAME}'
+# WORDPRESS_TITLE '${WORDPRESS_TITLE}'
+# WORDPRESS_DB_PREFIX '${WORDPRESS_DB_PREFIX}'
+# WORDPRESS_USER_NAME '${WORDPRESS_USER_NAME}'
+# WORDPRESS_USER_PASSWORD '${WORDPRESS_USER_PASSWORD}'
+# WORDPRESS_USER_EMAIL '${WORDPRESS_USER_EMAIL}'
+# DOMAIN_NAME '${DOMAIN_NAME}'
+# ---END-OF-FILE---
+# EOL
+
+    cat $INI_FILE
+
+	echo    
+
 # ----------- HELP -----------
 # Help page        
 else 
     echo "Plesk WordPress Scaler automates provisioning of a highly available and auto-scaling WordPress to AWS."
     echo
     echo "Commands:"
-    echo "   manage_wordpress.sh create        Create a new WordPress in your AWS account via AWS CLI."
-    echo "   manage_wordpress.sh delete        Delete the WordPress incl. database etc BE CAREFUL - this deletes all that the script created before."
-    echo "   manage_wordpress.sh list          List settings and WordPress instances."
-    echo "   manage_wordpress.sh console       Print console output of first EC2 instance found."
+    echo "   manage_wordpress.sh create  [TAG]      Create a new WordPress in your AWS account via AWS CLI."
+    echo "   manage_wordpress.sh delete  [TAG]      Delete the WordPress incl. database etc BE CAREFUL - this deletes all that the script created before."
+    echo "   manage_wordpress.sh list    [TAG]      List settings and WordPress instances."
+    echo "   manage_wordpress.sh console [TAG]      Print console output of first EC2 instance found."
+    echo "   manage_wordpress.sh config  [TAG]      Create a new config file with as TAG.ini."
+    echo
+    echo "Parameters:"
+    echo "   COMMAND TAG (optional)                 Name of the WordPress stack. Can only be small letters and numbers. Loads settings from TAG.ini file."
+    echo "   delete OK                              Deletes WordPress stack without confirmation"
 	print_footer
 fi
