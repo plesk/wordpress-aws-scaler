@@ -106,12 +106,12 @@ function search_values
     key=${3}
     value=${4}
 
-    var_block=$(search_value "$content" "$result_key" "$key" "$value")
+    result=$(search_value "$content" "$result_key" "$key" "$value")
  
-    while [ -n "$var_block" ]; do
-        search_array[index++]="$var_block"
-        content="${content/$value/}"
-        var_block=$(search_value "$content" "$result_key" "$key" "$value")
+    while [ -n "$result" ]; do
+        search_array[index++]="$result"
+        content="${content/$result/}"
+        result=$(search_value "$content" "$result_key" "$key" "$value")
     done
 }
 
