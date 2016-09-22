@@ -653,10 +653,10 @@ elif [[ $ACTION == "delete" ]]; then
 
     	ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
-		    echo "      Setting max instances to 0 for Auto Scaling Group \"$ASG\"..."     
+		    echo "       Setting max instances to 0 for Auto Scaling Group \"$ASG\"..."     
             OUTPUT=$(run_cmd "aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 0 --min-size 0")
 		else
-            echo "      No Auto Scaling Group found"        
+            echo "       No Auto Scaling Group found"        
 		fi
 
         # ----- DELETE INSTANCES -----
@@ -671,11 +671,11 @@ elif [[ $ACTION == "delete" ]]; then
 	    	# echo "       Detaching Auto Scaling Instance \"$INSTANCE_ID\"..."
 	        # OUTPUT=$(run_cmd "aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --should-decrement-desired-capacity")
 
-	    	echo "      Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
+	    	echo "       Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
 	        OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
 	   		i=$((i+1))
     	done    
- 		echo "      $i Auto Scaling Instances deleted"  
+ 		echo "       $i Auto Scaling Instances deleted"  
 
         # ----- DELETE LAUNCH CONFIGURATIONS -----
 	   	STEP=$((STEP+1))
@@ -684,10 +684,10 @@ elif [[ $ACTION == "delete" ]]; then
 
 	    LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     	if [[ -n $LC ]]; then    
-		    echo "      Deleting Launch Configuration \"$LC\"..."     
+		    echo "       Deleting Launch Configuration \"$LC\"..."     
             OUTPUT=$(run_cmd "aws autoscaling delete-launch-configuration --launch-configuration-name $LC_NAME")
 		else
-            echo "      No Launch Configurations found"        
+            echo "       No Launch Configurations found"        
 		fi
 
         # ----- DELETE CLOUD WATCH -----
@@ -699,12 +699,12 @@ elif [[ $ACTION == "delete" ]]; then
     	search_values "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
     	for ALARM_NAME in "${search_array[@]}"
     	do
-	  		echo "      Deleting CloudWatch Alarm \"$ALARM_NAME\"..."
+	  		echo "       Deleting CloudWatch Alarm \"$ALARM_NAME\"..."
 			OUTPUT=$(run_cmd "aws cloudwatch delete-alarms --alarm-name $ALARM_NAME")
 	    	i=$((i+1))
     	done    
     
-		echo "      $i CloudWatch Alarms deleted"
+		echo "       $i CloudWatch Alarms deleted"
 
         # ----- DELETE AUTO SCALING GROUP -----
 	   	STEP=$((STEP+1))
@@ -712,10 +712,10 @@ elif [[ $ACTION == "delete" ]]; then
     	OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
     	ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
-		    echo "      Deleting Auto Scaling Group \"$ASG_NAME\"..."     
+		    echo "       Deleting Auto Scaling Group \"$ASG_NAME\"..."     
             OUTPUT=$(run_cmd "aws autoscaling delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME --force-delete")
 		else
-            echo "      No Auto Scaling Group found"        
+            echo "       No Auto Scaling Group found"        
 		fi
 
         # ----- DELETE EC2 INSTANCES -----
@@ -731,11 +731,11 @@ elif [[ $ACTION == "delete" ]]; then
         # 	#"Name": "running"
 	    #     #STATE=$(search_value "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
         # 	
-	    #    echo "      Deleting EC2 Instance \"$INSTANCE_ID\"..."
+	    #    echo "       Deleting EC2 Instance \"$INSTANCE_ID\"..."
 	    #    OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
         #    i=$((i+1))
 	    # done 
- 		# echo "      $i EC2 Instances deleted"  
+ 		# echo "       $i EC2 Instances deleted"  
 
         # ----- DELETE ELB -----
 	   	STEP=$((STEP+1))
@@ -744,10 +744,10 @@ elif [[ $ACTION == "delete" ]]; then
 
     	ELB=$(search_value "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
     	if [[ -n $ELB ]]; then    
-		    echo "      Deleting Elastic Loadbalancer \"$ELB\"..."     
+		    echo "       Deleting Elastic Loadbalancer \"$ELB\"..."     
             OUTPUT=$(run_cmd "aws elb delete-load-balancer --load-balancer-name $ELB_NAME")
 		else
-            echo "      No Elastic Loadbalancer found"        
+            echo "       No Elastic Loadbalancer found"        
 		fi
 
         # ----- DELETE RDS -----
@@ -756,10 +756,10 @@ elif [[ $ACTION == "delete" ]]; then
         OUTPUT=$(aws rds describe-db-instances)
         DB=$(search_value "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
         if [[ -n $DB ]]; then
-            echo "      Deleting RDS Database \"$DB\"..."
+            echo "       Deleting RDS Database \"$DB\"..."
             OUTPUT=$(run_cmd "aws rds delete-db-instance --db-instance-identifier $DB_NAME --skip-final-snapshot")
         else
-            echo "      No RDS Database found"        
+            echo "       No RDS Database found"        
         fi
 
         # ----- DELETE S3 -----
@@ -770,11 +770,11 @@ elif [[ $ACTION == "delete" ]]; then
         S3_BUCKET=$(search_value "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
         if [[ -n $S3_BUCKET ]]; then
 		    S3_URL=$(get_s3_url $S3_BUCKET_NAME)
-            echo "      Deleting S3 Bucket \"$S3_URL\"..."
+            echo "       Deleting S3 Bucket \"$S3_URL\"..."
             OUTPUT=$(run_cmd "aws s3 rm s3://$S3_BUCKET_NAME --recursive")
             OUTPUT=$(run_cmd "aws s3api delete-bucket --bucket $S3_BUCKET_NAME")
         else
-            echo "      No S3 Bucket found"        
+            echo "       No S3 Bucket found"        
         fi
 
         # ----- DELETE CLOUD FRONT -----
@@ -784,13 +784,13 @@ elif [[ $ACTION == "delete" ]]; then
         OUTPUT=$(aws cloudfront list-distributions)
         CF=$(get_value "$OUTPUT" "DomainName") 
         if [[ -n $CF ]]; then
-            echo "      Deleting CLoud Front \"$CF\"..."
-            echo "      Not implemented yet!"
+            echo "       Deleting Cloud Front \"$CF\"... -> not implemented yet!"
             # TODO get-distribution-config
             # TODO aws cloudfront update-distribution --id $CF_ID
             # TODO aws cloudfront delete-distribution --id $CF_ID
+        else
+            echo "       No Cloud Front found"
         fi
-        echo "      No Cloud Front found"
 
         # ----- DELETE IAM User -----
         STEP=$((STEP+1))
@@ -799,7 +799,7 @@ elif [[ $ACTION == "delete" ]]; then
 
         HAS_USER=$(search_value "$OUTPUT" "UserName" "UserName" "$IAM_USER")
         if [[ -n $HAS_USER ]]; then
-            echo "      Deleting IAM user \"$IAM_USER\"..."
+            echo "       Deleting IAM user \"$IAM_USER\"..."
 
             OUTPUT=$(aws iam list-access-keys --user-name $IAM_USER)
             i=0
@@ -812,7 +812,7 @@ elif [[ $ACTION == "delete" ]]; then
             $(run_cmd "aws iam detach-user-policy --user-name $IAM_USER --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess")
             $(run_cmd "aws iam delete-user --user-name $IAM_USER")
         else
-            echo "      No IAM User found"        
+            echo "       No IAM User found"        
         fi
       
 
@@ -823,10 +823,10 @@ elif [[ $ACTION == "delete" ]]; then
 
         SEC_GROUP_ID=$(search_value "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
         if [[ -n $SEC_GROUP_ID ]]; then
-            echo "      Deleting Security Group \"$SEC_GROUP_ID\"..."
+            echo "       Deleting Security Group \"$SEC_GROUP_ID\"..."
             OUTPUT=$(run_cmd "aws ec2 delete-security-group --group-id $SEC_GROUP_ID")
         else
-            echo "      No Security Group found"        
+            echo "       No Security Group found"        
         fi 
 
         echo 
