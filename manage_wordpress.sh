@@ -130,7 +130,7 @@ function get_valid_id
 function get_s3_url
 {
 	prefix="https://"
-	suffix=".s3.amazonaws.com/"
+	suffix=".s3.amazonaws.com"
 	echo $prefix$1$suffix
 }
 
@@ -335,7 +335,7 @@ if [[ $ACTION == "create" ]]; then
         CF=$(get_value "$OUTPUT" "DomainName")
 
         #overwrite S3_URL so that WordPress loads assets over Cloudfront
-        S3_URL="https://$CF/"
+        S3_URL="https://$CF"
     fi
     echo "       Cloud Front: $CF"
 
