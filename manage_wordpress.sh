@@ -287,7 +287,14 @@ if [[ $ACTION == "create" ]]; then
     if [[ -z $HAS_USER ]]; then
         echo "       Creating IAM User..."
         OUTPUT=$(run_cmd "aws iam create-user --user-name $IAM_USER")
+    fi
+    echo "       IAM USER: $IAM_USER"
 
+    if [ -f $IAM_USER_CREDENTIALS ]; then
+        echo "       Getting IAM User credentials..."
+        IAM_USER_KEY=$(head -n 1 $IAM_USER_CREDENTIALS)
+        IAM_USER_SECRET=$(sed '2q;d' $IAM_USER_CREDENTIALS)
+    else
         echo "       Creating IAM User Credentials..."
         CREDENTIALS=$(run_cmd "aws iam create-access-key --user-name $IAM_USER")
         IAM_USER_KEY=$(get_value "$CREDENTIALS" "AccessKeyId")
@@ -295,18 +302,7 @@ if [[ $ACTION == "create" ]]; then
 
         echo "$IAM_USER_KEY" >> "$IAM_USER_CREDENTIALS"
         echo "$IAM_USER_SECRET" >> "$IAM_USER_CREDENTIALS"
-    else
-        if [ -f $IAM_USER_CREDENTIALS ]; then
-            echo "       Getting IAM User credentials..."
-            IAM_USER_KEY=$(head -n 1 $IAM_USER_CREDENTIALS)
-            IAM_USER_SECRET=$(sed '2q;d' $IAM_USER_CREDENTIALS)
-        else
-            echo "       ERROR: IAM User exists already but cannot find the credentials in $IAM_USER_CREDENTIALS"
-            echo
-            exit            
-        fi
     fi
-    echo "       IAM USER: $IAM_USER"
 
    	# ----- CREATE S3 -----
    	STEP=$((STEP+1))
