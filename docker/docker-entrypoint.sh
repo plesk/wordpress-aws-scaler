@@ -80,7 +80,7 @@ fi
 
 if [ "$S3_ENABLED" ]; then
 	wp plugin install https://github.com/humanmade/S3-Uploads/archive/master.zip --activate --allow-root
-	wp s3-uploads migrate-attachments --delete-local --allow-root
+	nohup wp s3-uploads migrate-attachments --delete-local --allow-root &
 fi
 
 if [ -f /custom.sh ]; then
