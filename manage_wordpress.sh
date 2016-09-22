@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # TODOS
-# - create, list and delete CloudFront
-# - create, list and delete CloudWatch Alarms
-# - check EC2 state for "running", "shutting-down", "terminated", "pending"
+# - Delete CloudFront
+# - Create CloudWatch Alarms
+# - Create Route53
 
 # ----------- FUNCTIONS -----------
 # Function to load values from the configuration file
@@ -322,8 +322,6 @@ if [[ $ACTION == "create" ]]; then
     S3_URL=$(get_s3_url $S3_BUCKET_NAME)
     echo "       S3 Storage: $S3_URL"
 
-    # TODO Check and create CloudFront
-
    	# ----- CREATE CLOUD FRONT -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Cloud Front..."
@@ -431,9 +429,6 @@ EOL
 
     cat ec2-user-data.sh >> "$LOG_FILE"         
 
-    # TODO check whether we can write docker parameters to a file and load it from there instead of a very long command
-    # --> docker-compose
-
    	# ----- CREATE LAUNCH CONFIGURATIONS -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Launch Configuration..."
@@ -451,7 +446,23 @@ EOL
     fi
     echo "       Launch Configuration: $LC" 
 
-	# TODO Create CloudWatch Alarms
+   	# ----- CREATE SNS QUEUE -----
+	STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check Simple Notification Service Topics (SNS)..."
+    OUTPUT=$(aws sns list-topics)	
+
+    i=0
+    search_values "$OUTPUT" "TopicArn"
+    for SNS_ARN in "${search_array[@]}"
+    do
+        echo "       Notification Topic (SNS): $SNS_ARN"
+    done   
+    if [[ 0 -eq $i ]]; then  
+    	echo "       Creating Notification Service Topics (SNS)..."
+        OUTPUT=$(run_cmd "aws sns create-topic --name $TAG")
+        SNS_ARN=$(get_value "$OUTPUT" "TopicArn")
+        echo "       Notification Topic (SNS): $SNS_ARN"
+    fi  
 
    	# ----- CREATE CLOUD WATCH ALARMS -----
 	STEP=$((STEP+1))
@@ -462,7 +473,7 @@ EOL
     if [[ -z $ALARM_NAME ]]; then    
     	echo "       Creating CloudWatch Alarms"
 		echo "       CloudWatch Alarm: $ALARM_NAME"
-		# TODO finish CloudWatch - might required SNS queue?
+		# TODO finish CloudWatch - requires SNS queue
         # aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description "$TAG Alarm when CPU exceeds 70 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold  --dimensions "Name=InstanceId,Value=i-12345678" --evaluation-periods 2 --alarm-actions arn:aws:sns:${REGION}:111122223333:MyTopic --unit Percent
 	else
 		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
@@ -705,6 +716,23 @@ elif [[ $ACTION == "delete" ]]; then
     	done    
     
 		echo "       $i CloudWatch Alarms deleted"
+
+        # ----- DELETE SNS TOPICS -----
+	   	STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching Simple Notification Service Topics (SNS)..."
+        OUTPUT=$(aws sns list-topics)	
+
+        i=0
+        search_values "$OUTPUT" "TopicArn"
+        for SNS_ARN in "${search_array[@]}"
+        do
+	  		echo "       Deleting Notification Topic (SNS) \"$SNS_ARN\"... -> not implemented yet!"
+            # TODO: Finish Delete SNS --> check if its the correct topic before deleting
+            #OUTPUT=$(run_cmd "aws sns delete-topic --topic-arn $SNS_ARN")
+            i=$((i+1))
+        done    
+
+		echo "       $i Notification Topics (SNS) deleted"
 
         # ----- DELETE AUTO SCALING GROUP -----
 	   	STEP=$((STEP+1))
@@ -964,7 +992,19 @@ elif [[ $1 == "list" ]]; then
          ASG="none"
     fi
     echo "   Auto Scaling Group:         $ASG" 
+
+    # ----- LIST SNS TOPICS -----
+	OUTPUT=$(aws sns list-topics)	
+    i=0
+    search_values "$OUTPUT" "TopicArn"
+    for SNS_ARN in "${search_array[@]}"
+    do
+	    echo "   Notification Topic (SNS):   $SNS_ARN"
+	    i=$((i+1))
+    done    
     
+	echo "   Notification Topics (SNS):  $i" 
+
     # ----- LIST CLOUD WATCH -----
 	OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)	
     i=0
@@ -976,7 +1016,7 @@ elif [[ $1 == "list" ]]; then
     done    
     
 	echo "   CloudWatch Alarms:          $i" 
-	
+
     # ----- LIST INSTANCES -----
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
     i=0
@@ -987,21 +1027,7 @@ elif [[ $1 == "list" ]]; then
 	    i=$((i+1))
     done    
     
-	echo "   Auto Scaling Instances:     $i" 
-	    
-    # ----- LIST EC2 INSTANCES -----
-    # OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
-    #
-    # i=0
-    # search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
-    # for INSTANCE_ID in "${search_array[@]}"
-    # do
-	#     echo "   EC2 Instance:               $INSTANCE_ID"
-	#     i=$((i+1))
-    # done    
-    # 
-	# echo "   EC2 Instances:              $i"  
-	
+	echo "   Auto Scaling Instances:     $i" 	
 	echo 
     
 # ----------- CONSOLE -----------
