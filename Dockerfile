@@ -1,5 +1,7 @@
 FROM debian:testing
 
+MAINTAINER Jan Loeffler <jan@plesk.com>
+
 # Upgrade everything
 RUN apt-get update && apt-get upgrade -y
 
@@ -35,7 +37,7 @@ RUN apt-get update && apt-get -y install \
 RUN mkdir /run/php
 
 # nginx site conf
-ADD ./nginx-site.conf /etc/nginx/sites-available/default
+COPY docker/nginx-site.conf /etc/nginx/sites-available/default
 RUN sed -i "s/nginx;/www-data;/" /etc/nginx/nginx.conf
 
 # Install WP-CLI
@@ -48,8 +50,8 @@ RUN wp core download --path=/usr/src/wordpress --allow-root
 
 # Integrate user data
 COPY content /usr/src/wordpress/wp-content
-COPY custom.sh /custom.sh
-COPY data.sql /data.sql
+COPY docker/custom.sh /custom.sh
+COPY docker/data.sql /data.sql
 
 # Fix user permissions
 RUN chown -R www-data:www-data /usr/src/wordpress
@@ -58,7 +60,7 @@ RUN chown -R www-data:www-data /usr/src/wordpress
 RUN echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
     && wget -O- https://download.newrelic.com/548C16BF.gpg | apt-key add -
 
-COPY docker-entrypoint.sh /entrypoint.sh
+COPY docker/docker-entrypoint.sh /entrypoint.sh
 
 # grr, ENTRYPOINT resets CMD now
 ENTRYPOINT ["/entrypoint.sh"]
