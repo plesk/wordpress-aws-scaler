@@ -78,17 +78,17 @@ if [ "$NEWRELIC_KEY" ]; then
 	apt-get update && apt-get install -y newrelic-php5
 fi
 
-if [ "$S3_ENABLED" ]; then
-	wp plugin install https://github.com/humanmade/S3-Uploads/archive/master.zip --activate --allow-root
-	nohup wp s3-uploads migrate-attachments --delete-local --allow-root &
-fi
-
 if [ -f /custom.sh ]; then
 	export WORDPRESS_URL
 	/custom.sh
 fi
 
 chown -R www-data:www-data /usr/src/wordpress
+
+if [ "$S3_ENABLED" ]; then
+	wp plugin install https://github.com/humanmade/S3-Uploads/archive/master.zip --activate --allow-root
+	nohup wp s3-uploads migrate-attachments --delete-local --allow-root &
+fi
 
 service php7.0-fpm restart
 
