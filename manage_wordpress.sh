@@ -335,7 +335,7 @@ if [[ $ACTION == "create" ]]; then
         CF=$(get_value "$OUTPUT" "DomainName")
 
         #overwrite S3_URL so that WordPress loads assets over Cloudfront
-        S3_URL=$CF
+        S3_URL="https://$CF/"
     fi
     echo "       Cloud Front: $CF"
 
