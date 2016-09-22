@@ -771,6 +771,7 @@ elif [[ $ACTION == "delete" ]]; then
         if [[ -n $S3_BUCKET ]]; then
 		    S3_URL=$(get_s3_url $S3_BUCKET_NAME)
             echo "      Deleting S3 Bucket \"$S3_URL\"..."
+            OUTPUT=$(run_cmd "aws s3 rm s3://$S3_BUCKET_NAME --recursive")
             OUTPUT=$(run_cmd "aws s3api delete-bucket --bucket $S3_BUCKET_NAME")
         else
             echo "      No S3 Bucket found"        
