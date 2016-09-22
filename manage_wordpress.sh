@@ -401,6 +401,7 @@ if [[ $ACTION == "create" ]]; then
     	echo "$OUTPUT" >> "$LOG_FILE"
         ELB=$(get_value "$OUTPUT" "DNSName")    
     	aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
+        aws elb configure-health-check --load-balancer-name $ELB_NAME --health-check Target=HTTP:80/readme.html,Interval=30,UnhealthyThreshold=10,HealthyThreshold=10,Timeout=5
     fi
     echo "       Elastic Loadbalancer: $ELB"   
                
