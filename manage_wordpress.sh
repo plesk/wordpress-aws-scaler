@@ -287,6 +287,7 @@ if [[ $ACTION == "create" ]]; then
     if [[ -z $HAS_USER ]]; then
         echo "       Creating IAM User..."
         OUTPUT=$(run_cmd "aws iam create-user --user-name $IAM_USER")
+        OUTPUT=$(run_cmd "aws iam attach-user-policy --user-name $IAM_USER --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess")
     fi
     echo "       IAM USER: $IAM_USER"
 
