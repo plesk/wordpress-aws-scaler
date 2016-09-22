@@ -474,7 +474,13 @@ EOL
     	echo "       Creating CloudWatch Alarms"
 		echo "       CloudWatch Alarm: $ALARM_NAME"
 		# TODO finish CloudWatch - requires SNS queue
-        # aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description "$TAG Alarm when CPU exceeds 70 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold  --dimensions "Name=InstanceId,Value=i-12345678" --evaluation-periods 2 --alarm-actions arn:aws:sns:${REGION}:111122223333:MyTopic --unit Percent
+        # aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description "$TAG Alarm when CPU exceeds 70 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent
+        CMD="aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description \"$TAG Alarm when CPU exceeds 70 percent\" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent"
+      	echo "$CMD" >> "$LOG_FILE"
+        OUTPUT=$(aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description "$TAG Alarm when CPU exceeds 70 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent)
+    	echo "$OUTPUT" >> "$LOG_FILE"
+        ALARM_NAME=$(get_value "$OUTPUT" "AlarmName")    
+	    echo "       CloudWatch Alarm: $ALARM_NAME"
 	else
 		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
 		
