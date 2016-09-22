@@ -86,8 +86,17 @@ fi
 chown -R www-data:www-data /usr/src/wordpress
 
 if [ "$S3_ENABLED" ]; then
+	DOMAIN_NO_PROTOCOL=$(echo "$WORDPRESS_URL" | sed 's~http[s]*://~~g')
+	S3_NO_PROTOCOL=$(echo "$S3_BUCKET_URL" | sed 's~http[s]*://~~g')
+	DOMAIN_NO_PROTOCOL+='/wp-content/uploads/'
+	S3_NO_PROTOCOL+='uploads/'
 	wp plugin install https://github.com/humanmade/S3-Uploads/archive/master.zip --activate --allow-root
-	nohup wp s3-uploads migrate-attachments --delete-local --allow-root &
+
+	if [[ -n "$S3_BUCKET_URL" ]]; then
+		nohup sh -c "wp s3-uploads migrate-attachments --delete-local --allow-root && wp search-replace '$DOMAIN_NO_PROTOCOL' '$S3_NO_PROTOCOL' --allow-root"
+	else
+		nohup wp s3-uploads migrate-attachments --delete-local --allow-root &
+	fi
 fi
 
 service php7.0-fpm restart
