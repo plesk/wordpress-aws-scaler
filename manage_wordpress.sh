@@ -643,7 +643,7 @@ elif [[ $ACTION == "delete" ]]; then
     if [[ $OK == "OK" ]]; then
 
         echo "----- DELETE WORDPRESS -----" >> "$LOG_FILE"
-        STEPS=9
+        STEPS=10
         STEP=0
 
         # ----- STOP AUTO SCALING -----
@@ -777,7 +777,7 @@ elif [[ $ACTION == "delete" ]]; then
         fi
 
         # ----- DELETE CLOUD FRONT -----
-		# TODO Delete CloudFront
+        # TODO Delete CloudFront
         # enable AWC CLI preview mode for CloudFront Support
         aws configure set preview.cloudfront true
         OUTPUT=$(aws cloudfront list-distributions)
@@ -789,7 +789,31 @@ elif [[ $ACTION == "delete" ]]; then
             # TODO aws cloudfront update-distribution --id $CF_ID
             # TODO aws cloudfront delete-distribution --id $CF_ID
         fi
-        echo "      No Cloud Front found"        
+        echo "      No Cloud Front found"
+
+        # ----- DELETE IAM User -----
+        STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching IAM user..."
+        OUTPUT=$(aws iam list-users)
+
+        HAS_USER=$(search_value "$OUTPUT" "UserName" "UserName" "$IAM_USER")
+        if [[ -n $HAS_USER ]]; then
+            echo "      Deleting IAM user \"$IAM_USER\"..."
+
+            OUTPUT=$(aws iam list-access-keys --user-name $IAM_USER)
+            i=0
+            search_values "$OUTPUT" "AccessKeyId" "UserName" "$IAM_USER"
+            for ACCESS_KEY in "${search_array[@]}"
+            do
+                $(run_cmd "aws iam delete-access-key --access-key $ACCESS_KEY --user-name $IAM_USER")
+            done
+
+            $(run_cmd "aws iam detach-user-policy --user-name $IAM_USER --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess")
+            $(run_cmd "aws iam delete-user --user-name $IAM_USER")
+        else
+            echo "      No IAM User found"        
+        fi
+      
 
         # ----- DELETE SECURITY GROUP -----
 	   	STEP=$((STEP+1))
