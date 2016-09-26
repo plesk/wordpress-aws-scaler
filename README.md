@@ -3,13 +3,13 @@
 
 # WordPress AWS Scaler
 
-This is a how-to including scripts about how to auto-scale WordPress across multiple EC2 instances on AWS with using Docker for deploying the WordPress core, RDS for the managed MySQL database server and CloudFront with S3 for delivering static files.
+The Plesk WordPress AWS Scaler is a script than can create WordPress sites on-the-fly in your AWS accounts that are optimized for high performance and throughput. Your WordPress site gets deployed across multiple EC2 instances on AWS by using Docker, RDS for the managed MySQL database server and CloudFront with S3 for delivering static files. The WordPress itself is always the latest from WordPress.org and is hosted on nginx with php7-fpm.
 
 # Requirements
  
  * Docker (installed on your development machine)
- * AWS account 
- * AWS CLI see https://docs.aws.amazon.com/cli/latest/userguide/installing.html 
+ * AWS account (https://aws.amazon.com/)
+ * AWS CLI (see https://docs.aws.amazon.com/cli/latest/userguide/installing.html)
 
 # Prepare AWS CLI on developer machine
  
@@ -52,6 +52,18 @@ You can run the create command over and over again - it won't destroy anything. 
     $ sh manage-wordpress.sh delete
 
 Usually deleting the EC2 instances will take some seconds until they are really shut down. Until these instances still exist the script will not be able to delete the security group for security reasons from AWS side. If the security group is not yet deleted, wait for 2 min und re-run "sh manage-wordpress.sh delete". When the EC2 instances are terminated, all components will be completely cleaned up. Zero costs!
+
+# Show console output of EC2 instances
+
+    $ sh manage-wordpress.sh console
+
+Searches for the first running EC2 instance of your WordPress stack and prints console output.
+
+# Configure your WordPress stack
+
+    $ sh manage-wordpress.sh config
+
+Creates a new configuration file based on current settings. You can change the file as you need and even have multiple config files with different names. The config filename e.g. "pleskwp.ini" is the name of your stack (here: "pleskwp").
 
 # The following steps are not needed for the WordPress AWS Scaler CLI since these are automatically done in the background.
 

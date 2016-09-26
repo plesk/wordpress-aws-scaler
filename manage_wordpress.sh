@@ -247,7 +247,6 @@ if [[ $ACTION == "create" ]]; then
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check VPC..."
     OUTPUT=$(aws ec2 describe-vpcs)
- 
     VPC_ID=$(search_value "$OUTPUT" "VpcId" "IsDefault" "true")
     if [[ -z $VPC_ID ]]; then
         echo "       Creating VPC..."
@@ -260,7 +259,6 @@ if [[ $ACTION == "create" ]]; then
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Security Group..."
     OUTPUT=$(aws ec2 describe-security-groups)
-
     SEC_GROUP_ID=$(search_value "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
     if [[ -z $SEC_GROUP_ID ]]; then
         echo "       Creating Security Group..."
@@ -282,12 +280,11 @@ if [[ $ACTION == "create" ]]; then
     STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check IAM USER..."
     OUTPUT=$(aws iam list-users)
-
     HAS_USER=$(search_value "$OUTPUT" "UserName" "UserName" "$IAM_USER")
     if [[ -z $HAS_USER ]]; then
         echo "       Creating IAM User..."
-        OUTPUT=$(run_cmd "aws iam create-user --user-name $IAM_USER")
-        OUTPUT=$(run_cmd "aws iam attach-user-policy --user-name $IAM_USER --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess")
+        run_cmd "aws iam create-user --user-name $IAM_USER"
+        run_cmd "aws iam attach-user-policy --user-name $IAM_USER --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess"
     fi
     echo "       IAM USER: $IAM_USER"
 
@@ -309,7 +306,6 @@ if [[ $ACTION == "create" ]]; then
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check S3 Bucket..."
     OUTPUT=$(aws s3api list-buckets)
-
     S3_BUCKET=$(search_value "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
     if [[ -z $S3_BUCKET ]]; then
         echo "       Creating S3 Bucket..."
@@ -391,7 +387,6 @@ if [[ $ACTION == "create" ]]; then
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Elastic Loadbalancer..."
     OUTPUT=$(aws elb describe-load-balancers)
-
     ELB=$(search_value "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
     if [[ -z $ELB ]]; then    
     	echo "       Creating ELB"
@@ -434,7 +429,6 @@ EOL
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Launch Configuration..."
     OUTPUT=$(aws autoscaling describe-launch-configurations)
-
     LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     if [[ -z $LC ]]; then
         echo "       Getting first Key Pair"
@@ -451,40 +445,37 @@ EOL
 	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Simple Notification Service Topics (SNS)..."
     OUTPUT=$(aws sns list-topics)	
-
-    i=0
-    search_values "$OUTPUT" "TopicArn"
-    for SNS_ARN in "${search_array[@]}"
-    do
-        echo "       Notification Topic (SNS): $SNS_ARN"
-    done   
-    if [[ 0 -eq $i ]]; then  
+    SNS_ARN=$(search_value "$OUTPUT" "TopicArn" "TopicArn" "$TAG")
+    if [[ -z $SNS_ARN ]]; then
     	echo "       Creating Notification Service Topics (SNS)..."
         OUTPUT=$(run_cmd "aws sns create-topic --name $TAG")
         SNS_ARN=$(get_value "$OUTPUT" "TopicArn")
-        echo "       Notification Topic (SNS): $SNS_ARN"
-    fi  
+    fi
+    echo "       Notification Topic (SNS): $SNS_ARN"
 
    	# ----- CREATE CLOUD WATCH ALARMS -----
 	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check CloudWatch Alarms..."
 	OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
 	
+	# TODO finish CloudWatch - requires SNS queue
     ALARM_NAME=$(search_value "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization")
     if [[ -z $ALARM_NAME ]]; then    
-    	echo "       Creating CloudWatch Alarms"
-		echo "       CloudWatch Alarm: $ALARM_NAME"
-		# TODO finish CloudWatch - requires SNS queue
-        # aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description "$TAG Alarm when CPU exceeds 70 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent
+    	echo "       Creating CloudWatch Alarms for up- and down-scaling"
+		
+        echo "       CloudWatch Alarm (Up-Scaling): ${TAG}_cpu_high"
         CMD="aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description \"$TAG Alarm when CPU exceeds 70 percent\" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent"
       	echo "$CMD" >> "$LOG_FILE"
         OUTPUT=$(aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_high --alarm-description "$TAG Alarm when CPU exceeds 70 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent)
     	echo "$OUTPUT" >> "$LOG_FILE"
-        ALARM_NAME=$(get_value "$OUTPUT" "AlarmName")    
-	    echo "       CloudWatch Alarm: $ALARM_NAME"
+
+		echo "       CloudWatch Alarm (Down-Scaling): ${TAG}_cpu_low"
+        CMD="aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_low --alarm-description \"$TAG Alarm when CPU is lower than 20 percent\" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 20 --comparison-operator LessThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent"
+      	echo "$CMD" >> "$LOG_FILE"
+        OUTPUT=$(aws cloudwatch put-metric-alarm --alarm-name ${TAG}_cpu_low --alarm-description "$TAG Alarm when CPU is lower than 20 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 20 --comparison-operator LessThanThreshold --evaluation-periods 2 --alarm-actions ${SNS_ARN} --unit Percent)
+    	echo "$OUTPUT" >> "$LOG_FILE"
 	else
 		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
-		
 	    search_values "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
 	    for ALARM_NAME in "${search_array[@]}"
 	    do
@@ -496,7 +487,6 @@ EOL
     STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Auto Scaling Group..."
     OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
-
     ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     if [[ -z $ASG ]]; then    
     	echo "       Creating Auto Scaling Group"
@@ -515,9 +505,8 @@ EOL
 	aws autoscaling resume-processes --auto-scaling-group-name $ASG_NAME
 
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
- 
-    i=0
     search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    i=0
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "       EC2 Instance: $INSTANCE_ID"
@@ -541,9 +530,8 @@ EOL
     fi
 
     OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG" "Name=instance-state-name,Values=running")
- 
+    search_values "$OUTPUT" "InstanceId"
     i=0
-    search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "       EC2 Instance: $INSTANCE_ID [running]"
@@ -565,7 +553,6 @@ elif [[ $ACTION == "update" ]]; then
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Launch Configuration..."
     OUTPUT=$(aws autoscaling describe-launch-configurations)
-
     LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     if [[ -z $LC ]]; then
         echo "      ERROR: No Launch Configuration found. Please use \"manage-wordpress create\" instead."
@@ -578,7 +565,6 @@ elif [[ $ACTION == "update" ]]; then
     STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Auto Scaling Group..."
     OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
-
     ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     if [[ -z $ASG ]]; then    
         echo "      ERROR: No Auto Scaling Group found. Please use \"manage-wordpress create\" instead."
@@ -591,13 +577,12 @@ elif [[ $ACTION == "update" ]]; then
     STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Searching Auto Scaling Instances..."
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
-
-    i=0
     search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    i=0
     for INSTANCE_ID in "${search_array[@]}"
     do
         echo "      Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
-        OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
+        run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
         i=$((i+1))
     done    
     echo "      $i Auto Scaling Instances deleted" 
@@ -610,10 +595,9 @@ elif [[ $ACTION == "update" ]]; then
 
 	aws autoscaling resume-processes --auto-scaling-group-name $ASG_NAME
                
-    OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
- 
-    i=0
+    OUTPUT=$(aws autoscaling describe-auto-scaling-instances) 
     search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    i=0
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "      EC2 Instance: $INSTANCE_ID"
@@ -637,9 +621,8 @@ elif [[ $ACTION == "update" ]]; then
     fi
 
     OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG" "Name=instance-state-name,Values=running")
- 
+    search_values "$OUTPUT" "InstanceId"
     i=0
-    search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "      EC2 Instance: $INSTANCE_ID [running]"
@@ -668,11 +651,10 @@ elif [[ $ACTION == "delete" ]]; then
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Auto Scaling Group..."
     	OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
-
     	ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
 		    echo "       Setting max instances to 0 for Auto Scaling Group \"$ASG\"..."     
-            OUTPUT=$(run_cmd "aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 0 --min-size 0")
+            run_cmd "aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --max-size 0 --min-size 0"
 		else
             echo "       No Auto Scaling Group found"        
 		fi
@@ -681,16 +663,15 @@ elif [[ $ACTION == "delete" ]]; then
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Auto Scaling Instances..."
     	OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
-
-    	i=0
     	search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    	i=0
     	for INSTANCE_ID in "${search_array[@]}"
     	do
 	    	# echo "       Detaching Auto Scaling Instance \"$INSTANCE_ID\"..."
-	        # OUTPUT=$(run_cmd "aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --should-decrement-desired-capacity")
+	        # run_cmd "aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --should-decrement-desired-capacity"
 
 	    	echo "       Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
-	        OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
+	        run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
 	   		i=$((i+1))
     	done    
  		echo "       $i Auto Scaling Instances deleted"  
@@ -699,11 +680,10 @@ elif [[ $ACTION == "delete" ]]; then
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Launch Configurations..."
     	OUTPUT=$(aws autoscaling describe-launch-configurations)
-
 	    LC=$(search_value "$OUTPUT" "LaunchConfigurationName" "LaunchConfigurationName" "$LC_NAME")
     	if [[ -n $LC ]]; then    
 		    echo "       Deleting Launch Configuration \"$LC\"..."     
-            OUTPUT=$(run_cmd "aws autoscaling delete-launch-configuration --launch-configuration-name $LC_NAME")
+            run_cmd "aws autoscaling delete-launch-configuration --launch-configuration-name $LC_NAME"
 		else
             echo "       No Launch Configurations found"        
 		fi
@@ -711,14 +691,13 @@ elif [[ $ACTION == "delete" ]]; then
         # ----- DELETE CLOUD WATCH -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching CloudWatch Alarms..."
-		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)
-	
-    	i=0
+		OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)	
     	search_values "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
+    	i=0
     	for ALARM_NAME in "${search_array[@]}"
     	do
 	  		echo "       Deleting CloudWatch Alarm \"$ALARM_NAME\"..."
-			OUTPUT=$(run_cmd "aws cloudwatch delete-alarms --alarm-name $ALARM_NAME")
+			run_cmd "aws cloudwatch delete-alarms --alarm-name $ALARM_NAME"
 	    	i=$((i+1))
     	done    
     
@@ -728,14 +707,12 @@ elif [[ $ACTION == "delete" ]]; then
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Simple Notification Service Topics (SNS)..."
         OUTPUT=$(aws sns list-topics)	
-
+        search_values "$OUTPUT" "TopicArn" "TopicArn" "$TAG"
         i=0
-        search_values "$OUTPUT" "TopicArn"
         for SNS_ARN in "${search_array[@]}"
         do
 	  		echo "       Deleting Notification Topic (SNS) \"$SNS_ARN\"... -> not implemented yet!"
-            # TODO: Finish Delete SNS --> check if its the correct topic before deleting
-            #OUTPUT=$(run_cmd "aws sns delete-topic --topic-arn $SNS_ARN")
+            run_cmd "aws sns delete-topic --topic-arn $SNS_ARN"
             i=$((i+1))
         done    
 
@@ -748,7 +725,7 @@ elif [[ $ACTION == "delete" ]]; then
     	ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
     	if [[ -n $ASG ]]; then    
 		    echo "       Deleting Auto Scaling Group \"$ASG_NAME\"..."     
-            OUTPUT=$(run_cmd "aws autoscaling delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME --force-delete")
+            run_cmd "aws autoscaling delete-auto-scaling-group --auto-scaling-group-name $ASG_NAME --force-delete"
 		else
             echo "       No Auto Scaling Group found"        
 		fi
@@ -756,10 +733,9 @@ elif [[ $ACTION == "delete" ]]; then
         # ----- DELETE EC2 INSTANCES -----
 	   	# STEP=$((STEP+1))
         # echo "[$STEP/$STEPS] Searching remaining EC2 instances..."
-        # OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG")
- 
+        # OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG") 
+        # search_values "$OUTPUT" "InstanceId"
  		# i=0
-        # search_values "$OUTPUT" "InstanceId" "ImageId" "$AMI"
         # for INSTANCE_ID in "${search_array[@]}"
         # do
         # 	# check if instance is already terminated
@@ -767,7 +743,7 @@ elif [[ $ACTION == "delete" ]]; then
 	    #     #STATE=$(search_value "$OUTPUT" "Name" "InstanceId" "$INSTANCE_ID")
         # 	
 	    #    echo "       Deleting EC2 Instance \"$INSTANCE_ID\"..."
-	    #    OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
+	    #    run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
         #    i=$((i+1))
 	    # done 
  		# echo "       $i EC2 Instances deleted"  
@@ -776,11 +752,10 @@ elif [[ $ACTION == "delete" ]]; then
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Elastic Loadbalancer..."
     	OUTPUT=$(aws elb describe-load-balancers)
-
     	ELB=$(search_value "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
     	if [[ -n $ELB ]]; then    
 		    echo "       Deleting Elastic Loadbalancer \"$ELB\"..."     
-            OUTPUT=$(run_cmd "aws elb delete-load-balancer --load-balancer-name $ELB_NAME")
+            run_cmd "aws elb delete-load-balancer --load-balancer-name $ELB_NAME"
 		else
             echo "       No Elastic Loadbalancer found"        
 		fi
@@ -792,7 +767,7 @@ elif [[ $ACTION == "delete" ]]; then
         DB=$(search_value "$OUTPUT" "DBInstanceIdentifier" "DBInstanceIdentifier" "$DB_NAME")
         if [[ -n $DB ]]; then
             echo "       Deleting RDS Database \"$DB\"..."
-            OUTPUT=$(run_cmd "aws rds delete-db-instance --db-instance-identifier $DB_NAME --skip-final-snapshot")
+            run_cmd "aws rds delete-db-instance --db-instance-identifier $DB_NAME --skip-final-snapshot"
         else
             echo "       No RDS Database found"        
         fi
@@ -801,13 +776,12 @@ elif [[ $ACTION == "delete" ]]; then
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching S3 Bucket..."
         OUTPUT=$(aws s3api list-buckets)
-
         S3_BUCKET=$(search_value "$OUTPUT" "Name" "Name" "$S3_BUCKET_NAME")
         if [[ -n $S3_BUCKET ]]; then
 		    S3_URL=$(get_s3_url $S3_BUCKET_NAME)
             echo "       Deleting S3 Bucket \"$S3_URL\"..."
-            OUTPUT=$(run_cmd "aws s3 rm s3://$S3_BUCKET_NAME --recursive")
-            OUTPUT=$(run_cmd "aws s3api delete-bucket --bucket $S3_BUCKET_NAME")
+            run_cmd "aws s3 rm s3://$S3_BUCKET_NAME --recursive"
+            run_cmd "aws s3api delete-bucket --bucket $S3_BUCKET_NAME"
         else
             echo "       No S3 Bucket found"        
         fi
@@ -831,21 +805,20 @@ elif [[ $ACTION == "delete" ]]; then
         STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching IAM user..."
         OUTPUT=$(aws iam list-users)
-
         HAS_USER=$(search_value "$OUTPUT" "UserName" "UserName" "$IAM_USER")
         if [[ -n $HAS_USER ]]; then
             echo "       Deleting IAM user \"$IAM_USER\"..."
 
             OUTPUT=$(aws iam list-access-keys --user-name $IAM_USER)
-            i=0
             search_values "$OUTPUT" "AccessKeyId" "UserName" "$IAM_USER"
+            i=0
             for ACCESS_KEY in "${search_array[@]}"
             do
-                $(run_cmd "aws iam delete-access-key --access-key $ACCESS_KEY --user-name $IAM_USER")
+                run_cmd "aws iam delete-access-key --access-key $ACCESS_KEY --user-name $IAM_USER"
             done
 
-            $(run_cmd "aws iam detach-user-policy --user-name $IAM_USER --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess")
-            $(run_cmd "aws iam delete-user --user-name $IAM_USER")
+            run_cmd "aws iam detach-user-policy --user-name $IAM_USER --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess"
+            run_cmd "aws iam delete-user --user-name $IAM_USER"
         else
             echo "       No IAM User found"        
         fi
@@ -855,11 +828,10 @@ elif [[ $ACTION == "delete" ]]; then
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Security Group..."
         OUTPUT=$(aws ec2 describe-security-groups)
-
         SEC_GROUP_ID=$(search_value "$OUTPUT" "GroupId" "GroupName" "$SEC_GROUP_NAME")
         if [[ -n $SEC_GROUP_ID ]]; then
             echo "       Deleting Security Group \"$SEC_GROUP_ID\"..."
-            OUTPUT=$(run_cmd "aws ec2 delete-security-group --group-id $SEC_GROUP_ID")
+            run_cmd "aws ec2 delete-security-group --group-id $SEC_GROUP_ID"
         else
             echo "       No Security Group found"        
         fi 
@@ -1002,8 +974,8 @@ elif [[ $1 == "list" ]]; then
 
     # ----- LIST SNS TOPICS -----
 	OUTPUT=$(aws sns list-topics)	
+    search_values "$OUTPUT" "TopicArn" "TopicArn" "$TAG"
     i=0
-    search_values "$OUTPUT" "TopicArn"
     for SNS_ARN in "${search_array[@]}"
     do
 	    echo "   Notification Topic (SNS):   $SNS_ARN"
@@ -1014,8 +986,8 @@ elif [[ $1 == "list" ]]; then
 
     # ----- LIST CLOUD WATCH -----
 	OUTPUT=$(aws cloudwatch describe-alarms --alarm-name-prefix $TAG)	
-    i=0
     search_values "$OUTPUT" "AlarmName" "MetricName" "CPUUtilization"
+    i=0
     for ALARM_NAME in "${search_array[@]}"
     do
 	    echo "   CloudWatch Alarm:           $ALARM_NAME"
@@ -1026,8 +998,8 @@ elif [[ $1 == "list" ]]; then
 
     # ----- LIST INSTANCES -----
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances)
-    i=0
     search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
+    i=0
     for INSTANCE_ID in "${search_array[@]}"
     do
 	    echo "   Auto Scaling Instance:      $INSTANCE_ID"
@@ -1042,7 +1014,7 @@ elif [[ $1 == "list" ]]; then
 elif [[ $1 == "console" ]]; then
 
     OUTPUT=$(aws ec2 describe-instances --filters "Name=tag-value,Values=$TAG" "Name=instance-state-name,Values=running") 
-    INSTANCE_ID=$(search_value "$OUTPUT" "InstanceId" "ImageId" "$AMI")
+    INSTANCE_ID=$(search_value "$OUTPUT" "InstanceId")
     if [[ -n $INSTANCE_ID ]]; then
 	    OUTPUT=$(aws ec2 get-console-output --instance-id $INSTANCE_ID)
 	    echo $OUTPUT
