@@ -393,20 +393,47 @@ if [[ $ACTION == "create" ]]; then
     OUTPUT=$(aws elb describe-load-balancers)
 
     ELB=$(search_value "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
-    if [[ -z $ELB ]]; then    
-    	echo "       Creating ELB"
-   	 	CMD="aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners \"Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80\" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c"
-      	echo "$CMD" >> "$LOG_FILE"
-   	 	OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
-    	echo "$OUTPUT" >> "$LOG_FILE"
+    if [[ -z $ELB ]]; then
+        OUTPUT=$(aws iam list-server-certificates)
+        ARN=$(search_value "$OUTPUT" "Arn" "ServerCertificateName" "$TAG")
+
+        if [[ -z $ARN ]]; then
+            #Required
+            commonname=$DOMAIN_NAME
+
+            #Change to your company details
+            country=EU
+            state=$DOMAIN_NAME
+            locality=$DOMAIN_NAME
+            organization=$DOMAIN_NAME
+            organizationalunit=IT
+            email=no-reply@$DOMAIN_NAME
+
+            #create the request
+            openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout $DOMAIN_NAME.key -out $DOMAIN_NAME.crt \
+                -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
+
+            openssl rsa -in $DOMAIN_NAME.key -text > $DOMAIN_NAME-private.pem
+            openssl x509 -inform PEM -in $DOMAIN_NAME.crt > $DOMAIN_NAME-public.pem
+
+            OUTPUT=$(aws iam upload-server-certificate --server-certificate-name $TAG --certificate-body file://$DOMAIN_NAME-public.pem --private-key file://$DOMAIN_NAME-private.pem)
+            ARN=$(search_value "$OUTPUT" "Arn")
+            echo "$OUTPUT" >> "$LOG_FILE"
+        fi
+
+        echo "       Creating ELB"
+        CMD="aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners \"Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80\" \"Protocol=https,LoadBalancerPort=443,InstanceProtocol=http,InstancePort=80,SSLCertificateId=$ARN\" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c"
+        echo "$CMD" >> "$LOG_FILE"
+        OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" "Protocol=https,LoadBalancerPort=443,InstanceProtocol=http,InstancePort=80,SSLCertificateId=$ARN" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
+        echo "$OUTPUT" >> "$LOG_FILE"
         ELB=$(get_value "$OUTPUT" "DNSName")    
-    	aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
+        aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
         aws elb configure-health-check --load-balancer-name $ELB_NAME --health-check Target=HTTP:80/readme.html,Interval=30,UnhealthyThreshold=10,HealthyThreshold=10,Timeout=5
     fi
     echo "       Elastic Loadbalancer: $ELB"   
                
-   	# ----- CREATE EC2 USER DATA SCRIPT -----
-   	STEP=$((STEP+1))
+    # ----- CREATE EC2 USER DATA SCRIPT -----
+    STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Generating EC2 User Data script..."                       
 
 	# parameters used by Docker script
