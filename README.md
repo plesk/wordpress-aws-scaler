@@ -47,6 +47,12 @@ Existing VPC, Security Groups, ELB, RDS, ... will be re-used if they were create
 
 You can run the create command over and over again - it won't destroy anything. The script always checks what already exists and creates only what is missing.
 
+# Redeploy the EC2 instances only with the latest WordPress docker image containing your site
+
+    $ sh manage-wordpress.sh update
+
+The update command will kill all EC2 instances of your stack but leaves all other resources untouched. Afterwards it triggers the AutoScaling functionality to recreate the instances. During boot-up these new instances pull the latest Docker image from Docker Hub to be up-to-date and connect to your existing RDS cluster and S3 storage.
+
 # Delete an existing WordPress including all AWS components and its data -> go back to zero running costs
 
     $ sh manage-wordpress.sh delete
