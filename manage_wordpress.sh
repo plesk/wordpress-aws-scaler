@@ -609,19 +609,41 @@ elif [[ $ACTION == "update" ]]; then
     for INSTANCE_ID in "${search_array[@]}"
     do
         echo "      Deleting Auto Scaling Instance \"$INSTANCE_ID\"..."
-        run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
+        OUTPUT=$(run_cmd "aws ec2 terminate-instances --instance-ids $INSTANCE_ID")
         i=$((i+1))
-    done    
+    done 
     echo "      $i Auto Scaling Instances deleted" 
+    echo
 
     sleep 10s
+
+   	# ----- WAIT UNTIL INSTANCES ARE REALLY TERMINATED -----
+    # EC2 state-codes: pending=0, running=16, shutting-down=32, terminated=48, stopping=64, stopped=80
+    times=0
+    while [ 10 -gt $times ] && [[ -z $(aws ec2 describe-instances --instance-id $INSTANCE_ID --filters "Name=instance-state-code,Values=48" | grep "terminated") ]]
+    do
+        times=$(( $times + 1 ))
+        echo "      Check if $INSTANCE_ID is terminated [$times]..."
+        sleep 10s
+    done
+
+    if [ 10 -eq $times ]; then
+        echo "      EC2 Instance $INSTANCE_ID is still running. Please re-run update in a minute..."
+        echo
+        exit    
+    fi
+
+	echo "      Detaching Auto Scaling Instance \"$INSTANCE_ID\"..."
+	OUTPUT=$(run_cmd "aws autoscaling detach-instances --instance-ids $INSTANCE_ID --auto-scaling-group-name $ASG_NAME --no-should-decrement-desired-capacity")
 
    	# ----- CREATE EC2 INSTANCES IN AUTO SCALING GROUP -----
     STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Creating new Auto Scaling Instances..."
 
 	aws autoscaling resume-processes --auto-scaling-group-name $ASG_NAME
-               
+
+    sleep 5s          
+
     OUTPUT=$(aws autoscaling describe-auto-scaling-instances) 
     search_values "$OUTPUT" "InstanceId" "LaunchConfigurationName" "$LC_NAME"
     i=0
