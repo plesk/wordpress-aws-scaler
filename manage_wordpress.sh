@@ -317,22 +317,22 @@ if [[ $ACTION == "create" ]]; then
     S3_URL=$(get_s3_url $S3_BUCKET_NAME)
     echo "       S3 Storage: $S3_URL"
 
-   	# ----- CREATE CLOUD FRONT -----
+   	# ----- CREATE CLOUDFRONT -----
    	STEP=$((STEP+1))
-    echo "[$STEP/$STEPS] Check Cloud Front..."
+    echo "[$STEP/$STEPS] Check CloudFront..."
     # enable AWC CLI preview mode for CloudFront Support
     aws configure set preview.cloudfront true
     OUTPUT=$(aws cloudfront list-distributions)
     CF=$(get_value "$OUTPUT" "DomainName")
     if [[ -z $CF ]]; then
-        echo "       Creating Cloud Front..."
+        echo "       Creating CloudFront..."
         OUTPUT=$(run_cmd "aws cloudfront create-distribution --origin-domain-name $S3_BUCKET_NAME.s3.amazonaws.com")
         CF=$(get_value "$OUTPUT" "DomainName")
 
-        #overwrite S3_URL so that WordPress loads assets over Cloudfront
+        #overwrite S3_URL so that WordPress loads assets over CloudFront
         S3_URL="https://$CF"
     fi
-    echo "       Cloud Front: $CF"
+    echo "       CloudFront: $CF"
 
    	# ----- CREATE RDS -----
    	STEP=$((STEP+1))
@@ -714,7 +714,7 @@ elif [[ $ACTION == "delete" ]]; then
     if [[ $OK == "OK" ]]; then
 
         echo "----- DELETE WORDPRESS -----" >> "$LOG_FILE"
-        STEPS=11
+        STEPS=12
         STEP=0
 
         # ----- STOP AUTO SCALING -----
@@ -871,6 +871,32 @@ elif [[ $ACTION == "delete" ]]; then
             echo "       No RDS Database found"        
         fi
 
+        # ----- DELETE CLOUDFRONT -----
+        STEP=$((STEP+1))
+        echo "[$STEP/$STEPS] Searching CloudFront instance..."
+        # enable AWC CLI preview mode for CloudFront Support
+        aws configure set preview.cloudfront true
+        OUTPUT=$(aws cloudfront list-distributions)
+        CF_ID=$(get_value "$OUTPUT" "ARN")
+        if [[ -n $CF_ID ]]; then
+            echo "       Deleting CloudFront \"$CF_ID\"..."
+            CF_ID=${CF_ID##*/}
+            CONFIG=$(aws cloudfront get-distribution-config --id $CF_ID)
+            ETAG=$(get_value "$CONFIG" "ETag")
+
+            echo "$CONFIG" >> "$TAG-cloudflare-disable.json"
+            tail -n +4 $TAG-cloudflare-disable.json > $TAG-cloudflare-disable.json.tmp && mv $TAG-cloudflare-disable.json.tmp $TAG-cloudflare-disable.json
+            head -n -1 $TAG-cloudflare-disable.json > $TAG-cloudflare-disable.json.tmp && mv $TAG-cloudflare-disable.json.tmp $TAG-cloudflare-disable.json
+            sed -i -e 's/true/false/g' $TAG-cloudflare-disable.json
+            sed -i.old '1s;^;{\n;' $TAG-cloudflare-disable.json
+
+            run_cmd "aws cloudfront update-distribution --id $CF_ID --distribution-config file://$TAG-cloudflare-disable.json --if-match $ETAG"
+            run_cmd "aws cloudfront delete-distribution --id $CF_ID --if-match $ETAG"
+            rm $TAG-cloudflare-disable.json
+        else
+            echo "      No CloudFront found"
+        fi
+
         # ----- DELETE S3 -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching S3 Bucket..."
@@ -883,21 +909,6 @@ elif [[ $ACTION == "delete" ]]; then
             run_cmd "aws s3api delete-bucket --bucket $S3_BUCKET_NAME"
         else
             echo "       No S3 Bucket found"        
-        fi
-
-        # ----- DELETE CLOUD FRONT -----
-        # TODO Delete CloudFront
-        # enable AWC CLI preview mode for CloudFront Support
-        aws configure set preview.cloudfront true
-        OUTPUT=$(aws cloudfront list-distributions)
-        CF=$(get_value "$OUTPUT" "DomainName") 
-        if [[ -n $CF ]]; then
-            echo "       Deleting Cloud Front \"$CF\"... -> not implemented yet!"
-            # TODO get-distribution-config
-            # TODO aws cloudfront update-distribution --id $CF_ID
-            # TODO aws cloudfront delete-distribution --id $CF_ID
-        else
-            echo "       No Cloud Front found"
         fi
 
         # ----- DELETE IAM User -----
@@ -1016,7 +1027,7 @@ elif [[ $1 == "list" ]]; then
     fi
 	echo "   Security Group:             $SEC_GROUP_ID"
 
-    # ----- LIST CLOUD FRONT -----
+    # ----- LIST CLOUDFRONT -----
     # enable AWC CLI preview mode for CloudFront Support
     aws configure set preview.cloudfront true
     OUTPUT=$(aws cloudfront list-distributions)
