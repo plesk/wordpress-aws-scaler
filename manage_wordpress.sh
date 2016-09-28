@@ -1135,6 +1135,24 @@ elif [[ $1 == "list" ]]; then
     
 	echo "   Auto Scaling Instances:     $i" 	
 	echo 
+
+# ----------- SCALE -----------
+# Scale up or down to a given number of instances.
+elif [[ $1 == "scale" ]]; then
+
+    OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
+    ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
+    if [[ -z $ASG ]]; then   
+         ASG="none"
+    else
+        NUM_INSTANCES=$3
+        echo "Changing number of instances to $NUM_INSTANCES"
+        run_cmd "aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME --min-size 1 --desired-capacity $NUM_INSTANCES"
+        aws autoscaling resume-processes --auto-scaling-group-name $ASG_NAME
+    fi
+    echo "   Auto Scaling Group:         $ASG" 
+
+	echo    
     
 # ----------- CONSOLE -----------
 # Print console output of first EC2 instance found.
@@ -1195,6 +1213,7 @@ else
     echo "   manage_wordpress.sh update  [TAG]      Recreate all EC2 instances with latest Docker image but keep RDS, S3, etc. as they are."
     echo "   manage_wordpress.sh delete  [TAG]      Delete the WordPress incl. database etc BE CAREFUL - this deletes all that the script created before."
     echo "   manage_wordpress.sh list    [TAG]      List settings and WordPress instances."
+    echo "   manage_wordpress.sh scale   [TAG]  N   Scale up or down to a given number [N] of instances."
     echo "   manage_wordpress.sh console [TAG]      Print console output of first EC2 instance found."
     echo "   manage_wordpress.sh config  [TAG]      Create a new config file with as TAG.ini."
     echo
