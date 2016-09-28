@@ -882,16 +882,26 @@ elif [[ $ACTION == "delete" ]]; then
             CF_ID=${CF_ID##*/}
             CONFIG=$(aws cloudfront get-distribution-config --id $CF_ID)
             ETAG=$(get_value "$CONFIG" "ETag")
+            ENABLED=$(get_value "$CONFIG" "Enabled")
 
-            echo "$CONFIG" >> "$TAG-cloudflare-disable.json"
-            tail -n +4 $TAG-cloudflare-disable.json > $TAG-cloudflare-disable.json.tmp && mv $TAG-cloudflare-disable.json.tmp $TAG-cloudflare-disable.json
-            head -n -1 $TAG-cloudflare-disable.json > $TAG-cloudflare-disable.json.tmp && mv $TAG-cloudflare-disable.json.tmp $TAG-cloudflare-disable.json
-            sed -i -e 's/true/false/g' $TAG-cloudflare-disable.json
-            sed -i.old '1s;^;{\n;' $TAG-cloudflare-disable.json
+            if [[ $ENABLED == "true" ]]; then
+                echo "CloudFront get's disabled. Deleting will happen on second run."
+                echo "$CONFIG" >> "$TAG-cloudflare-disable.json"
+                tail -n +4 $TAG-cloudflare-disable.json > $TAG-cloudflare-disable.json.tmp && mv $TAG-cloudflare-disable.json.tmp $TAG-cloudflare-disable.json
+                head -n -1 $TAG-cloudflare-disable.json > $TAG-cloudflare-disable.json.tmp && mv $TAG-cloudflare-disable.json.tmp $TAG-cloudflare-disable.json
+                sed -i -e 's/true/false/g' $TAG-cloudflare-disable.json
+                sed -i.old '1s;^;{\n;' $TAG-cloudflare-disable.json
 
-            run_cmd "aws cloudfront update-distribution --id $CF_ID --distribution-config file://$TAG-cloudflare-disable.json --if-match $ETAG"
-            run_cmd "aws cloudfront delete-distribution --id $CF_ID --if-match $ETAG"
-            rm $TAG-cloudflare-disable.json
+                $(run_cmd "aws cloudfront update-distribution --id $CF_ID --distribution-config file://$TAG-cloudflare-disable.json --if-match $ETAG")
+                rm $TAG-cloudflare-disable.json
+            else
+                CF_STATUS=$(get_value "$OUTPUT" "Status")
+                if [[ $CF_STATUS == "Deployed" ]]; then
+                    $(run_cmd "aws cloudfront delete-distribution --id $CF_ID --if-match $ETAG")
+                else
+                    echo "CloudFront can't get deleted right now while the status is $CF_STATUS"
+                fi
+            fi
         else
             echo "      No CloudFront found"
         fi
