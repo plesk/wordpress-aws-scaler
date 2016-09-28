@@ -3,7 +3,6 @@
 # TODOS
 # - Delete CloudFront
 # - Create CloudWatch Alarms
-# - Create Route53
 
 # ----------- FUNCTIONS -----------
 # Function to load values from the configuration file
@@ -241,7 +240,7 @@ S3_BUCKET_NAME=$(get_valid_id "$S3_BUCKET_NAME")
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     STEP=0
-    STEPS=11
+    STEPS=12
 
    	# ----- CREATE VPC -----
    	STEP=$((STEP+1))
@@ -386,8 +385,9 @@ if [[ $ACTION == "create" ]]; then
    	# ----- CREATE ELB -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Elastic Loadbalancer..."
-    OUTPUT=$(aws elb describe-load-balancers)
+    OUTPUT=$(aws elb describe-load-balancers --load-balancer-names=pleskwp)
     ELB=$(search_value "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
+    ELB_ID=$(search_value "$OUTPUT" "CanonicalHostedZoneNameID")
     if [[ -z $ELB ]]; then
         OUTPUT=$(aws iam list-server-certificates)
         ARN=$(search_value "$OUTPUT" "Arn" "ServerCertificateName" "$TAG")
@@ -421,12 +421,33 @@ if [[ $ACTION == "create" ]]; then
         echo "$CMD" >> "$LOG_FILE"
         OUTPUT=$(aws elb create-load-balancer --load-balancer-name $ELB_NAME --listeners "Protocol=HTTP,LoadBalancerPort=80,InstanceProtocol=HTTP,InstancePort=80" "Protocol=https,LoadBalancerPort=443,InstanceProtocol=http,InstancePort=80,SSLCertificateId=$ARN" --security-groups $SEC_GROUP_ID --availability-zones eu-west-1a eu-west-1b eu-west-1c)
         echo "$OUTPUT" >> "$LOG_FILE"
-        ELB=$(get_value "$OUTPUT" "DNSName")    
+        ELB=$(get_value "$OUTPUT" "DNSName")
+        ELB_ID=$(search_value "$OUTPUT" "CanonicalHostedZoneNameID")
         aws elb add-tags --load-balancer-name $ELB_NAME --tags "Key=Name,Value=$TAG"
         aws elb configure-health-check --load-balancer-name $ELB_NAME --health-check Target=HTTP:80/readme.html,Interval=30,UnhealthyThreshold=10,HealthyThreshold=10,Timeout=5
     fi
-    echo "       Elastic Loadbalancer: $ELB"   
-               
+    echo "       Elastic Loadbalancer: $ELB"
+
+    STEP=$((STEP+1))
+    echo "[$STEP/$STEPS] Check host zone..."
+    OUTPUT=$(aws route53 list-hosted-zones-by-name --dns-name $DOMAIN_NAME)
+    ZONE_ID=$(search_value "$OUTPUT" "Id")
+    if [[ -z $ZONE_ID ]]; then
+        CALLER=$(date +"%Y-%m-%d-%H:%M")
+        echo "       Creating host zone"
+        CMD="aws route53 create-hosted-zone --name $DOMAIN_NAME --caller-reference $CALLER"
+        echo "$CMD" >> "$LOG_FILE"
+        OUTPUT=$(aws route53 create-hosted-zone --name $DOMAIN_NAME --caller-reference $CALLER)
+        echo "$OUTPUT" >> "$LOG_FILE"
+        ZONE_ID=$(get_value "$OUTPUT" "Id")   
+
+        echo "{ \"Changes\": [ { \"Action\": \"UPSERT\", \"ResourceRecordSet\": { \"Name\": \"$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB\", \"EvaluateTargetHealth\": false } } }, { \"Action\": \"UPSERT\", \"ResourceRecordSet\": { \"Name\": \"www.$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB\", \"EvaluateTargetHealth\": false } } } ] }" > change-resource-record-sets.json
+        aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://change-resource-record-sets.json
+        rm change-resource-record-sets.json
+
+    fi
+    echo "       Route53 Zone ID: $ZONE_ID"
+
     # ----- CREATE EC2 USER DATA SCRIPT -----
     STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Generating EC2 User Data script..."                       
@@ -567,7 +588,7 @@ EOL
 
     echo 
     echo "$i WordPress instances up and running."   
-    echo 
+    echo
 
 # ----------- UPDATE -----------
 # Update WordPress by replacing all ec2 instances in your AWS account via AWS CLI.
