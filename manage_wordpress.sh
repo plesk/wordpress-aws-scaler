@@ -821,11 +821,8 @@ elif [[ $ACTION == "delete" ]]; then
         # ----- DELETE ELB -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching Elastic Loadbalancer..."
-        OUTPUT=$(aws elb describe-load-balancers --load-balancer-names=$TAG)
+        OUTPUT=$(aws elb describe-load-balancers)
         ELB=$(search_value "$OUTPUT" "LoadBalancerName" "LoadBalancerName" "$ELB_NAME")
-        ELB_DNS=$(search_value "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
-        ELB_ID=$(search_value "$OUTPUT" "CanonicalHostedZoneNameID")
-
     	if [[ -n $ELB ]]; then    
 		    echo "       Deleting Elastic Loadbalancer \"$ELB\"..."     
             run_cmd "aws elb delete-load-balancer --load-balancer-name $ELB_NAME"
@@ -848,8 +845,11 @@ elif [[ $ACTION == "delete" ]]; then
         echo "[$STEP/$STEPS] Searching Route53 host zone..."
         OUTPUT=$(aws route53 list-hosted-zones-by-name --dns-name $DOMAIN_NAME)
         ZONE_ID=$(search_value "$OUTPUT" "Id")
-        if [[ -n $DB ]]; then
-            echo "       Deleting host zone \"$DB\"..."
+        if [[ -n $ZONE_ID ]]; then
+            OUTPUT=$(aws route53 list-resource-record-sets --hosted-zone-id $ZONE_ID)
+            ELB_ID=$(search_value "$OUTPUT" "HostedZoneId")
+            ELB_DNS=$(search_value "$OUTPUT" "DNSName")
+            echo "       Deleting host zone \"$ZONE_ID\"..."
             echo "{ \"Changes\": [ { \"Action\": \"DELETE\", \"ResourceRecordSet\": { \"Name\": \"$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB_DNS\", \"EvaluateTargetHealth\": false } } }, { \"Action\": \"DELETE\", \"ResourceRecordSet\": { \"Name\": \"www.$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB_DNS\", \"EvaluateTargetHealth\": false } } } ] }" > change-resource-record-sets.json
             run_cmd "aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://change-resource-record-sets.json"
             rm change-resource-record-sets.json
