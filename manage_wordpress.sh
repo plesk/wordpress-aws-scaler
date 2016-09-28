@@ -830,6 +830,16 @@ elif [[ $ACTION == "delete" ]]; then
             echo "       No Elastic Loadbalancer found"        
 		fi
 
+        OUTPUT=$(aws iam list-server-certificates)
+        ARN=$(search_value "$OUTPUT" "Arn" "ServerCertificateName" "$TAG")
+
+        if [[ -n $ARN ]]; then
+            echo "       Deleting Elastic Loadbalancer certificate..."
+            run_cmd "aws iam delete-server-certificate --server-certificate-name=$TAG"
+        else
+             echo "       No Elastic Loadbalancer certificate found"
+        fi
+
         # ----- DELETE RDS -----
 	   	STEP=$((STEP+1))
         echo "[$STEP/$STEPS] Searching RDS Database..."
