@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # TODOS
-# - Delete CloudFront
 # - Create CloudWatch Alarms
 
 # ----------- FUNCTIONS -----------
