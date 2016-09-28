@@ -385,7 +385,7 @@ if [[ $ACTION == "create" ]]; then
    	# ----- CREATE ELB -----
    	STEP=$((STEP+1))
     echo "[$STEP/$STEPS] Check Elastic Loadbalancer..."
-    OUTPUT=$(aws elb describe-load-balancers --load-balancer-names=pleskwp)
+    OUTPUT=$(aws elb describe-load-balancers --load-balancer-names=$TAG)
     ELB=$(search_value "$OUTPUT" "DNSName" "LoadBalancerName" "$ELB_NAME")
     ELB_ID=$(search_value "$OUTPUT" "CanonicalHostedZoneNameID")
     if [[ -z $ELB ]]; then
