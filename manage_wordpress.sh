@@ -239,7 +239,7 @@ S3_BUCKET_NAME=$(get_valid_id "$S3_BUCKET_NAME")
 if [[ $ACTION == "create" ]]; then
     echo "----- CREATE NEW WORDPRESS -----" >> "$LOG_FILE"
     STEP=0
-    STEPS=12
+    STEPS=13
 
    	# ----- CREATE VPC -----
    	STEP=$((STEP+1))
