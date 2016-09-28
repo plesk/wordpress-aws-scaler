@@ -433,18 +433,21 @@ if [[ $ACTION == "create" ]]; then
     OUTPUT=$(aws route53 list-hosted-zones-by-name --dns-name $DOMAIN_NAME)
     ZONE_ID=$(search_value "$OUTPUT" "Id")
     if [[ -z $ZONE_ID ]]; then
-        CALLER=$(date +"%Y-%m-%d-%H:%M")
-        echo "       Creating host zone"
-        CMD="aws route53 create-hosted-zone --name $DOMAIN_NAME --caller-reference $CALLER"
-        echo "$CMD" >> "$LOG_FILE"
-        OUTPUT=$(aws route53 create-hosted-zone --name $DOMAIN_NAME --caller-reference $CALLER)
-        echo "$OUTPUT" >> "$LOG_FILE"
-        ZONE_ID=$(get_value "$OUTPUT" "Id")   
+        if [[ -z "$ELB" || -z "$ELB_ID" ]]; then
+            echo "Host zone can't be created without a loadbalancer"
+        else
+            CALLER=$(date +"%Y-%m-%d-%H:%M")
+            echo "       Creating host zone"
+            CMD="aws route53 create-hosted-zone --name $DOMAIN_NAME --caller-reference $CALLER"
+            echo "$CMD" >> "$LOG_FILE"
+            OUTPUT=$(aws route53 create-hosted-zone --name $DOMAIN_NAME --caller-reference $CALLER)
+            echo "$OUTPUT" >> "$LOG_FILE"
+            ZONE_ID=$(get_value "$OUTPUT" "Id")   
 
-        echo "{ \"Changes\": [ { \"Action\": \"UPSERT\", \"ResourceRecordSet\": { \"Name\": \"$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB\", \"EvaluateTargetHealth\": false } } }, { \"Action\": \"UPSERT\", \"ResourceRecordSet\": { \"Name\": \"www.$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB\", \"EvaluateTargetHealth\": false } } } ] }" > change-resource-record-sets.json
-        aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://change-resource-record-sets.json
-        rm change-resource-record-sets.json
-
+            echo "{ \"Changes\": [ { \"Action\": \"UPSERT\", \"ResourceRecordSet\": { \"Name\": \"$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB\", \"EvaluateTargetHealth\": false } } }, { \"Action\": \"UPSERT\", \"ResourceRecordSet\": { \"Name\": \"www.$DOMAIN_NAME\", \"Type\": \"A\", \"AliasTarget\": { \"HostedZoneId\": \"$ELB_ID\", \"DNSName\": \"$ELB\", \"EvaluateTargetHealth\": false } } } ] }" > change-resource-record-sets.json
+            aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://change-resource-record-sets.json
+            rm change-resource-record-sets.json
+        fi
     fi
     echo "       Route53 Zone ID: $ZONE_ID"
 
@@ -536,17 +539,21 @@ EOL
     echo "[$STEP/$STEPS] Check Auto Scaling Group..."
     OUTPUT=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $ASG_NAME)
     ASG=$(search_value "$OUTPUT" "AutoScalingGroupARN" "AutoScalingGroupName" "$ASG_NAME")
-    if [[ -z $ASG ]]; then    
-    	echo "       Creating Auto Scaling Group"
-   	 	CMD="aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --availability-zones eu-west-1a eu-west-1b eu-west-1c --health-check-type ELB --health-check-grace-period 300 --tags Key=Name,Value=$TAG"
-      	echo "$CMD" >> "$LOG_FILE"
-   	 	OUTPUT=$(aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --availability-zones eu-west-1a eu-west-1b eu-west-1c --health-check-type ELB --health-check-grace-period 300 --tags "Key=Name,Value=$TAG")
-    	# [--desired-capacity <value>]
-    	# [--default-cooldown <value>]
-    	# [--termination-policies <value>]
-    	# [--new-instances-protected-from-scale-in | --no-new-instances-protected-from-scale-in]
-    	echo "$OUTPUT" >> "$LOG_FILE"
-        ASG=$(get_value "$OUTPUT" "AutoScalingGroupARN")    
+    if [[ -z $ASG ]]; then
+        if [[ -z $ELB_NAME ]]; then
+            echo "Auto Scaling Group can't be created without a loadbalancer"
+        else 
+            echo "       Creating Auto Scaling Group"
+            CMD="aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --availability-zones eu-west-1a eu-west-1b eu-west-1c --health-check-type ELB --health-check-grace-period 300 --tags Key=Name,Value=$TAG"
+            echo "$CMD" >> "$LOG_FILE"
+            OUTPUT=$(aws autoscaling create-auto-scaling-group --auto-scaling-group-name $ASG_NAME --launch-configuration-name $LC_NAME --min-size $EC2_MIN_INSTANCES --max-size $EC2_MAX_INSTANCES --load-balancer-names $ELB_NAME --availability-zones eu-west-1a eu-west-1b eu-west-1c --health-check-type ELB --health-check-grace-period 300 --tags "Key=Name,Value=$TAG")
+            # [--desired-capacity <value>]
+            # [--default-cooldown <value>]
+            # [--termination-policies <value>]
+            # [--new-instances-protected-from-scale-in | --no-new-instances-protected-from-scale-in]
+            echo "$OUTPUT" >> "$LOG_FILE"
+            ASG=$(get_value "$OUTPUT" "AutoScalingGroupARN")
+        fi
     fi
     echo "       Auto Scaling Group: $ASG" 
 
