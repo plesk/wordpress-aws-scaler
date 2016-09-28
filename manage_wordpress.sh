@@ -413,6 +413,7 @@ if [[ $ACTION == "create" ]]; then
             OUTPUT=$(aws iam upload-server-certificate --server-certificate-name $TAG --certificate-body file://$DOMAIN_NAME-public.pem --private-key file://$DOMAIN_NAME-private.pem)
             ARN=$(search_value "$OUTPUT" "Arn")
             echo "$OUTPUT" >> "$LOG_FILE"
+            sleep 2s
         fi
 
         echo "       Creating ELB"
