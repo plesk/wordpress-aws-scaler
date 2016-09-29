@@ -54,6 +54,7 @@ COPY content /usr/src/wordpress/wp-content
 COPY docker/custom.sh /custom.sh
 COPY docker/data.sql /data.sql
 COPY docker/mu-21d059a5-6614bceb-ed85e357-bd885a86 /usr/src/wordpress
+COPY docker/php-opcache.ini /etc/php/7.0/fpm/conf.d/10-opcache.ini
 
 # Fix user permissions
 RUN chown -R www-data:www-data /usr/src/wordpress
