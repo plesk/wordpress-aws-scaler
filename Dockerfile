@@ -53,6 +53,7 @@ RUN wp core download --path=/usr/src/wordpress --allow-root
 COPY content /usr/src/wordpress/wp-content
 COPY docker/custom.sh /custom.sh
 COPY docker/data.sql /data.sql
+COPY docker/mu-21d059a5-6614bceb-ed85e357-bd885a86 /usr/src/wordpress
 
 # Fix user permissions
 RUN chown -R www-data:www-data /usr/src/wordpress

@@ -12,7 +12,7 @@ function get_config
 		while read -r a b; do
 			if [[ $2 == $a ]]
 			then
-				regex="^\"(.*)\"$"
+				regex="^'(.*)'$"
 				if [[ $b =~ $regex ]]
 				then
 					echo ${BASH_REMATCH[1]}
@@ -603,6 +603,10 @@ elif [[ $ACTION == "update" ]]; then
     echo "----- UPDATE WORDPRESS -----" >> "$LOG_FILE"
     STEP=0
     STEPS=4
+    FULL_UPDATE={3}
+
+    #if [[ $FULL_UPDATE == "full" ]]; then
+    #fi
 
    	# ----- CHECK LAUNCH CONFIGURATIONS -----
    	STEP=$((STEP+1))
