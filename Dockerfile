@@ -20,6 +20,7 @@ RUN apt-get update && apt-get -y install \
     php7.0-gmp \
     php7.0-json \
     php7.0-ldap \
+    php7.0-memcached \
     php7.0-mysql \
     php7.0-odbc \
     php7.0-opcache \
@@ -37,8 +38,8 @@ RUN apt-get update && apt-get -y install \
 RUN mkdir /run/php
 
 # nginx site conf
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx-site.conf /etc/nginx/sites-available/default
-RUN sed -i "s/nginx;/www-data;/" /etc/nginx/nginx.conf
 
 # Install WP-CLI
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
