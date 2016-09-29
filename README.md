@@ -47,6 +47,15 @@ Existing VPC, Security Groups, ELB, RDS, ... will be re-used if they were create
 
 You can run the create command over and over again - it won't destroy anything. The script always checks what already exists and creates only what is missing.
 
+# Scale manually to a given number of EC2 instances
+
+The whole stack is designed for auto-scaling, so whenever your existing instance will exceed 70% CPU load for some minutes, the auto-scaler will add more instances on-the-fly. 
+However, if you want to scale up or down manually - like in the car - you can specify the exact number of instances that should be running.
+
+Change amount of EC2 instances to 5:
+
+    $ sh manage-wordpress.sh update scale pleskwp 5
+
 # Redeploy the EC2 instances only with the latest WordPress docker image containing your site
 
     $ sh manage-wordpress.sh update
