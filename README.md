@@ -1,11 +1,13 @@
-https://www.plesk.com/wp-content/uploads/2016/09/aws-plesk.jpg
+![](https://www.plesk.com/wp-content/uploads/2016/09/aws-plesk.jpg)
 
 [![Apache 2](http://img.shields.io/badge/license-Apache%202-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![](https://images.microbadger.com/badges/image/janloeffler/wordpress-aws-scaler.svg)](http://microbadger.com/images/janloeffler/wordpress-aws-scaler)
 
 # WordPress AWS Scaler
 
-The Plesk WordPress AWS Scaler is a script than can create WordPress sites on-the-fly in your AWS accounts that are optimized for high performance and throughput. Your WordPress site gets deployed across multiple EC2 instances on AWS by using Docker, RDS for the managed MySQL database server and CloudFront with S3 for delivering static files. The WordPress itself is always the latest from WordPress.org and is hosted on nginx with php7-fpm.
+The Plesk WordPress AWS Scaler is a script that creates and manages WordPress sites on-the-fly in your AWS accounts that are optimized for high performance and throughput. Your WordPress site gets deployed across multiple EC2 instances on AWS by using Docker, RDS for the managed MySQL database server and CloudFront with S3 for delivering static files. The WordPress itself is always the latest from WordPress.org and is hosted on nginx with php7-fpm.
+
+![](https://www.plesk.com/wp-content/uploads/2016/09/deployment.jpg)
 
 ## Requirements
  
@@ -83,6 +85,11 @@ Searches for the first running EC2 instance of your WordPress stack and prints c
 Creates a new configuration file based on current settings. You can change the file as you need and even have multiple config files with different names. The config filename e.g. "pleskwp.ini" is the name of your stack (here: "pleskwp").
 
 ## The following steps are not needed for the WordPress AWS Scaler CLI since these are automatically done in the background.
+
+The architecture of a WordPress instance create by manage-wordpress.sh looks like this:
+![](https://www.plesk.com/wp-content/uploads/2016/09/app-instance-768x431.jpg)
+
+The script configures the autoscaling group of AWS to spin up as many machines with identical configuration as required to deal with the current load. 
 
 ### How to build the WordPress docker image and upload it to the registry
 
