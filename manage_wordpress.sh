@@ -1,8 +1,15 @@
 #!/bin/bash
-
-# TODOS
-# - Create CloudWatch Alarms
-
+#
+################################################################################
+##          Plesk WordPress AWS Scaler - Auto-Scaling WordPress               ##
+################################################################################
+#
+#              https://github.com/plesk/wordpress-aws-scaler/
+#              Follow us at https://twitter.com/PleskOfficial
+#                       https://www.plesk.com
+#
+#  Licensed under Apache v2 (https://github.com/plesk/wordpress-aws-scaler/blob/master/LICENSE)
+#
 # ----------- FUNCTIONS -----------
 # Function to load values from the configuration file
 # Parameters: 1 File / 2 Name of the Key / 3 Default value (optional)
