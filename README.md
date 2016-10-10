@@ -1,7 +1,7 @@
-![](https://www.plesk.com/wp-content/uploads/2016/09/aws-plesk.jpg)
-
 [![Apache 2](http://img.shields.io/badge/license-Apache%202-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![](https://images.microbadger.com/badges/image/janloeffler/wordpress-aws-scaler.svg)](http://microbadger.com/images/janloeffler/wordpress-aws-scaler)
+
+![](https://www.plesk.com/wp-content/uploads/2016/09/aws-plesk.jpg)
 
 # WordPress AWS Scaler
 
