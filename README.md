@@ -10,13 +10,13 @@ The Plesk WordPress AWS Scaler is a script that creates and manages WordPress si
 ![](https://www.plesk.com/wp-content/uploads/2016/09/deployment.jpg)
 
 ## Requirements
- 
+
  * Docker (installed on your development machine)
  * AWS account (https://aws.amazon.com/)
  * AWS CLI (see https://docs.aws.amazon.com/cli/latest/userguide/installing.html)
 
 ## Prepare AWS CLI on developer machine
- 
+
 Install AWS CLI
 
     $ sudo pip install awscli
@@ -37,50 +37,50 @@ Check if all works by listing existing ec2 instances
 
 ### Display help
 
-    $ sh manage-wordpress.sh --help
+    $ ./manage-wordpress.sh --help
 
 ### List current settings and scan AWS account for existing WordPress stack
 
-    $ sh manage-wordpress.sh list
+    $ ./manage-wordpress.sh list
 
 ### Create a new WordPress stack into your AWS account
 
 Existing VPC, Security Groups, ELB, RDS, ... will be re-used if they were created by this script. Otherwise they will be automatically created based on your settings: see "sh manage-wordpress.sh list"
 
-    $ sh manage-wordpress.sh create
+    $ ./manage-wordpress.sh create
 
 You can run the create command over and over again - it won't destroy anything. The script always checks what already exists and creates only what is missing.
 
 ### Scale manually to a given number of EC2 instances
 
-The whole stack is designed for auto-scaling, so whenever your existing instance will exceed 70% CPU load for some minutes, the auto-scaler will add more instances on-the-fly. 
+The whole stack is designed for auto-scaling, so whenever your existing instance will exceed 70% CPU load for some minutes, the auto-scaler will add more instances on-the-fly.
 However, if you want to scale up or down manually - like in the car - you can specify the exact number of instances that should be running.
 
 Change amount of EC2 instances to 5:
 
-    $ sh manage-wordpress.sh update scale pleskwp 5
+    $ ./manage-wordpress.sh update scale pleskwp 5
 
 ### Redeploy the EC2 instances only with the latest WordPress docker image containing your site
 
-    $ sh manage-wordpress.sh update
+    $ ./manage-wordpress.sh update
 
 The update command will kill all EC2 instances of your stack but leaves all other resources untouched. Afterwards it triggers the AutoScaling functionality to recreate the instances. During boot-up these new instances pull the latest Docker image from Docker Hub to be up-to-date and connect to your existing RDS cluster and S3 storage.
 
 ### Delete an existing WordPress including all AWS components and its data -> go back to zero running costs
 
-    $ sh manage-wordpress.sh delete
+    $ ./manage-wordpress.sh delete
 
 Usually deleting the EC2 instances will take some seconds until they are really shut down. Until these instances still exist the script will not be able to delete the security group for security reasons from AWS side. If the security group is not yet deleted, wait for 2 min und re-run "sh manage-wordpress.sh delete". When the EC2 instances are terminated, all components will be completely cleaned up. Zero costs!
 
 ### Show console output of EC2 instances
 
-    $ sh manage-wordpress.sh console
+    $ ./manage-wordpress.sh console
 
 Searches for the first running EC2 instance of your WordPress stack and prints console output.
 
 ### Configure your WordPress stack
 
-    $ sh manage-wordpress.sh config
+    $ ./manage-wordpress.sh config
 
 Creates a new configuration file based on current settings. You can change the file as you need and even have multiple config files with different names. The config filename e.g. "pleskwp.ini" is the name of your stack (here: "pleskwp").
 
@@ -89,7 +89,7 @@ Creates a new configuration file based on current settings. You can change the f
 The architecture of a WordPress instance create by manage-wordpress.sh looks like this:
 ![](https://www.plesk.com/wp-content/uploads/2016/09/app-instance-768x431.jpg)
 
-The script configures the autoscaling group of AWS to spin up as many machines with identical configuration as required to deal with the current load. 
+The script configures the autoscaling group of AWS to spin up as many machines with identical configuration as required to deal with the current load.
 
 ### How to build the WordPress docker image and upload it to the registry
 
@@ -113,9 +113,9 @@ Select a database type in AWS RDS:
    * Amazon Aurora (high performance, works only on new DB.r3 instances)
    * MySQL DB
    * Maria DB
- 
+
 Choose a EC2 resource type: e.g. db.t2.small (1 vCPU, 1 GiB RAM)
- 
+
 Select "Multi-AZ Deployment" to have Amazon RDS maintain a synchronous standby replica in a different Availability Zone than the DB instance. Amazon RDS will automatically fail over to the standby in the case of a planned or unplanned outage of the primary. Learn More at http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html
 
 ### Create ELB and AutoScaling group
@@ -124,13 +124,13 @@ tbd
 
 ### AWS CLI Calls by manage_wordpress.sh script
 
-    $ manage_wordpress.sh list
-    
+    $ ./manage_wordpress.sh list
+
     $ aws ec2 describe-vps
     $ aws ec2 describe-security-groups
     $ aws ec2 describe-instances
 
-    $ manage_wordpress.sh create
+    $ ./manage_wordpress.sh create
 
     $ aws ec2 describe-vps
     $ aws ec2 create-vpc
@@ -138,16 +138,16 @@ tbd
     $ aws ec2 create-security-group
     $ aws ec2 describe-instances
     $ aws ec2 run-instances
-    
-    $ manage_wordpress.sh delete
-    
+
+    $ ./manage_wordpress.sh delete
+
     $ aws ec2 terminate-instances
     $ aws ec2 delete-security-group
     $ aws ec2 delete-vpc
-    
+
 ### AWS CLI APIs
 
-    $ aws autoscaling    
+    $ aws autoscaling
     $ aws ec2
     $ aws cloudfront
     $ aws cloudwatch
@@ -157,7 +157,7 @@ tbd
     $ aws s3
     $ aws route53
     $ aws events
-    
+
 ### All commands of AWS EC2 CLI
 
     $ accept-vpc-peering-connection
@@ -370,3 +370,12 @@ tbd
     $ unassign-private-ip-addresses
     $ unmonitor-instances
     $ wait
+
+# More information
+
+The complete article about AutoScaling WordPress sites in Docker containers with AWS: https://www.plesk.com/blog/product-technology/autoscaling-wordpress-with-docker-aws/
+
+# Contact
+
+ * Jan Löffler (jan@plesk.com, https://twitter.com/jlsoft2, https://www.jan-loeffler.de/)
+ * Plesk Team (https://twitter.com/plesk)
