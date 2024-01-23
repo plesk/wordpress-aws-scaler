@@ -208,7 +208,7 @@ INSTANCE_TYPE=$(get_config "$TAG" INSTANCE_TYPE "m3.medium")
 REGION=$(get_config "$TAG" REGION "eu-west-1")
 VPC_IP_BLOCK=$(get_config "$TAG" VPC_IP_BLOCK "172.31.0.0/16")
 DB_INSTANCE_TYPE=$(get_config "$TAG" DB_INSTANCE_TYPE "db.m3.medium")
-DB_PASSWORD=$(get_config "$TAG" DB_PASSWORD "changeme")
+DB_PASSWORD=$(get_config "$TAG" DB_PASSWORD "")
 DB_USERNAME=$(get_config "$TAG" DB_USERNAME "wordpress")
 DB_ENGINE=$(get_config "$TAG" DB_ENGINE "mariadb")
 EC2_MIN_INSTANCES=$(get_config "$TAG" EC2_MIN_INSTANCES "2")
@@ -229,11 +229,26 @@ NEWRELIC_NAME=$(get_config "$TAG" NEWRELIC_NAME "$TAG")
 WORDPRESS_TITLE=$(get_config "$TAG" WORDPRESS_TITLE "WordPress scaled on AWS")
 WORDPRESS_DB_PREFIX=$(get_config "$TAG" WORDPRESS_DB_PREFIX "wp_")
 WORDPRESS_USER_NAME=$(get_config "$TAG" WORDPRESS_USER_NAME "wordpress")
-WORDPRESS_USER_PASSWORD=$(get_config "$TAG" WORDPRESS_USER_PASSWORD "xWH44tVfAoAqJx")
-WORDPRESS_USER_EMAIL=$(get_config "$TAG" WORDPRESS_USER_EMAIL "jan@plesk.com")
+WORDPRESS_USER_PASSWORD=$(get_config "$TAG" WORDPRESS_USER_PASSWORD "")
+WORDPRESS_USER_EMAIL=$(get_config "$TAG" WORDPRESS_USER_EMAIL "")
 
 IAM_USER=$(get_config "$TAG" IAM_USER "$TAG")
 IAM_USER_CREDENTIALS="$TAG-credentials.log"
+
+if [[ -z $DB_PASSWORD ]]; then
+    echo "ERROR: Please set password for Database user in your local configuration file."
+    exit
+fi
+
+if [[ -z $WORDPRESS_USER_PASSWORD ]]; then
+    echo "ERROR: Please set password for WP user in your local configuration file."
+    exit
+fi
+
+if [[ -z $WORDPRESS_USER_EMAIL ]]; then
+    echo "ERROR: Please set email address for WP user in your local configuration file."
+    exit
+fi
 
 # remove _ characters in names
 DB_USERNAME=$(get_valid_id "$DB_USERNAME")

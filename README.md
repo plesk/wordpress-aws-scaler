@@ -3,11 +3,18 @@
 
 ![](https://www.plesk.com/wp-content/uploads/2016/09/aws-plesk.jpg)
 
+:no_entry:️ DEPRECATED
+
 # WordPress AWS Scaler
 
 The Plesk WordPress AWS Scaler is a script that creates and manages WordPress sites on-the-fly in your AWS accounts that are optimized for high performance and throughput. Your WordPress site gets deployed across multiple EC2 instances on AWS by using Docker, RDS for the managed MySQL database server and CloudFront with S3 for delivering static files. The WordPress itself is always the latest from WordPress.org and is hosted on nginx with php7-fpm.
 
 ![](https://www.plesk.com/wp-content/uploads/2016/09/deployment.jpg)
+
+## Important information
+
+This project is deprecated in it's current form. But you can still use it to understand the model.
+Please make sure to change passwords locally only to your needs and update software packages and operating systems to supported versions.
 
 ## Requirements
 

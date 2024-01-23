@@ -6,7 +6,7 @@
 : "${WORDPRESS_DB_PREFIX:=wp_}"
 
 : "${WORDPRESS_USER_NAME:=admin}"
-: "${WORDPRESS_USER_PASSWORD:=admin}"
+: "${WORDPRESS_USER_PASSWORD:=CHANGEME_PLEASE}"
 : "${WORDPRESS_USER_EMAIL:=admin@admin.dev}"
 
 : "${NEWRELIC_NAME:=WordPress AWS Scaler}"
@@ -43,7 +43,7 @@ define( 'S3_UPLOADS_BUCKET_URL', '$S3_BUCKET_URL' );"
 
 	fi
 
-	
+
 	if [ "$extra" ]; then
 		wp core config --dbname="$WORDPRESS_DB_NAME" --dbuser="$WORDPRESS_DB_USER" --dbpass="$WORDPRESS_DB_PASSWORD" --dbhost="$WORDPRESS_DB_HOST" --dbprefix="$WORDPRESS_DB_PREFIX" --allow-root --extra-php <<PHP
 $extra
